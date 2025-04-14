@@ -3,8 +3,12 @@ name = "tars"
 version = "0.2.2"
 authors = ["LSH <github@lsh.tech>"]
 edition = "2021"
-description = "Github template to setup the CI and cargo publish"
+description = "A Rust library for financial technical analysis indicators"
 license = "GPL-3.0"
 
 
 [dependencies]
+ndarray = "0.15"
+thiserror = "1.0"
+num-traits = "0.2"
+statrs = "0.16"
