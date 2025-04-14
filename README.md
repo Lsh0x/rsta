@@ -28,7 +28,7 @@ Add TARS to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tars = "0.2.2"
+tars = "0.0.1"
 ```
 
 ## Quick Start
