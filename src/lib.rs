@@ -1,4 +1,4 @@
-//! # Tars
+//! # RSTA
 //!
 //! A Rust library for technical analysis and trading strategies.
 //!
@@ -13,9 +13,9 @@
 //! ## Quick Start
 //!
 //! ```rust
-//! use tars::indicators::Indicator;
-//! use tars::indicators::Candle;
-//! use tars::indicators::trend::SimpleMovingAverage;
+//! use rsta::indicators::Indicator;
+//! use rsta::indicators::Candle;
+//! use rsta::indicators::trend::SimpleMovingAverage;
 //!
 //! // Create a Simple Moving Average indicator
 //! let mut sma = SimpleMovingAverage::new(5).unwrap();

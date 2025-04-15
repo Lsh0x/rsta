@@ -1,17 +1,17 @@
-# TARS - Technical Analysis in Rust
+# RSTA - Rust Statistical Technical Analysis
 
 A comprehensive Rust library for financial technical analysis indicators, providing efficient and type-safe implementations of popular indicators used in financial markets.
 
-[![GitHub last commit](https://img.shields.io/github/last-commit/lsh0x/tars)](https://github.com/lsh0x/tars/commits/main)
-[![CI](https://github.com/lsh0x/tars/workflows/CI/badge.svg)](https://github.com/lsh0x/tars/actions)
-[![Codecov](https://codecov.io/gh/lsh0x/tars/branch/main/graph/badge.svg)](https://codecov.io/gh/lsh0x/tars)
-[![Docs](https://docs.rs/tars/badge.svg)](https://docs.rs/tars)
-[![Crates.io](https://img.shields.io/crates/v/tars.svg)](https://crates.io/crates/tars)
-[![crates.io](https://img.shields.io/crates/d/tars)](https://crates.io/crates/tars)
+[![GitHub last commit](https://img.shields.io/github/last-commit/lsh0x/rsta)](https://github.com/lsh0x/rsta/commits/main)
+[![CI](https://github.com/lsh0x/rsta/workflows/CI/badge.svg)](https://github.com/lsh0x/rsta/actions)
+[![Codecov](https://codecov.io/gh/lsh0x/rsta/branch/main/graph/badge.svg)](https://codecov.io/gh/lsh0x/rsta)
+[![Docs](https://docs.rs/rsta/badge.svg)](https://docs.rs/rsta)
+[![Crates.io](https://img.shields.io/crates/v/rsta.svg)](https://crates.io/crates/rsta)
+[![crates.io](https://img.shields.io/crates/d/rsta)](https://crates.io/crates/rsta)
 
 ## Overview
 
-TARS provides robust implementations of technical indicators used for analyzing financial markets and making trading decisions. The library is designed with a focus on performance, type safety, and ease of use.
+RSTA provides robust implementations of technical indicators used for analyzing financial markets and making trading decisions. The library is designed with a focus on performance, type safety, and ease of use.
 
 ### Features
 
@@ -24,11 +24,11 @@ TARS provides robust implementations of technical indicators used for analyzing 
 
 ## Installation
 
-Add TARS to your `Cargo.toml`:
+Add RSTA to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tars = "0.0.1"
+rsta = "0.0.1"
 ```
 
 ## Quick Start
@@ -36,7 +36,7 @@ tars = "0.0.1"
 Here's a simple example calculating a Simple Moving Average (SMA):
 
 ```rust
-use tars::indicators::trend::{SimpleMovingAverage, Indicator};
+use rsta::indicators::trend::{SimpleMovingAverage, Indicator};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Price data
@@ -55,14 +55,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Indicator Categories
 
-TARS organizes indicators into four main categories:
+RSTA organizes indicators into four main categories:
 
 ### Trend Indicators
 
 Track the direction of price movements over time.
 
 ```rust
-use tars::indicators::trend::{ExponentialMovingAverage, Indicator};
+use rsta::indicators::trend::{ExponentialMovingAverage, Indicator};
 
 // Create a 14-period EMA
 let mut ema = ExponentialMovingAverage::new(14)?;
@@ -79,7 +79,7 @@ Available trend indicators:
 Measure the rate of price changes to identify overbought or oversold conditions.
 
 ```rust
-use tars::indicators::momentum::{RelativeStrengthIndex, Indicator};
+use rsta::indicators::momentum::{RelativeStrengthIndex, Indicator};
 
 // Create a 14-period RSI
 let mut rsi = RelativeStrengthIndex::new(14)?;
@@ -106,7 +106,7 @@ Available momentum indicators:
 Analyze trading volume to confirm price movements.
 
 ```rust
-use tars::indicators::{Candle, volume::{OnBalanceVolume, Indicator}};
+use rsta::indicators::{Candle, volume::{OnBalanceVolume, Indicator}};
 
 // Create an OBV indicator
 let mut obv = OnBalanceVolume::new();
@@ -139,7 +139,7 @@ Available volume indicators:
 Measure market volatility and price dispersion.
 
 ```rust
-use tars::indicators::volatility::{BollingerBands, Indicator};
+use rsta::indicators::volatility::{BollingerBands, Indicator};
 
 // Create Bollinger Bands with 20-period SMA and 2 standard deviations
 let mut bb = BollingerBands::new(20, 2.0)?;
@@ -170,10 +170,10 @@ Available volatility indicators:
 
 ### Batch vs. Real-time Calculation
 
-TARS supports both batch calculation for historical data and real-time updates:
+RSTA supports both batch calculation for historical data and real-time updates:
 
 ```rust
-use tars::indicators::trend::{SimpleMovingAverage, Indicator};
+use rsta::indicators::trend::{SimpleMovingAverage, Indicator};
 
 // Create indicator
 let mut sma = SimpleMovingAverage::new(14)?;
@@ -197,7 +197,7 @@ if let Some(new_sma) = sma.next(new_price)? {
 Some indicators require full OHLCV data using the `Candle` struct:
 
 ```rust
-use tars::indicators::Candle;
+use rsta::indicators::Candle;
 
 // Create a candle with OHLCV data
 let candle = Candle {
@@ -215,8 +215,8 @@ let candle = Candle {
 Many trading strategies use multiple indicators together:
 
 ```rust
-use tars::indicators::momentum::{RelativeStrengthIndex, Indicator as MomentumIndicator};
-use tars::indicators::volatility::{BollingerBands, Indicator as VolatilityIndicator};
+use rsta::indicators::momentum::{RelativeStrengthIndex, Indicator as MomentumIndicator};
+use rsta::indicators::volatility::{BollingerBands, Indicator as VolatilityIndicator};
 
 // Create indicators
 let mut rsi = RelativeStrengthIndex::new(14)?;
@@ -248,8 +248,8 @@ for i in 0..rsi_values.len().min(bb_values.len()) {
 All methods that might fail return a `Result` with detailed error information:
 
 ```rust
-use tars::indicators::trend::{SimpleMovingAverage, Indicator};
-use tars::indicators::IndicatorError;
+use rsta::indicators::trend::{SimpleMovingAverage, Indicator};
+use rsta::indicators::IndicatorError;
 
 // Handle errors explicitly
 match SimpleMovingAverage::new(0) {
@@ -267,7 +267,7 @@ match SimpleMovingAverage::new(0) {
 
 ## API Reference
 
-For complete API documentation, please visit [docs.rs/tars](https://docs.rs/tars).
+For complete API documentation, please visit [docs.rs/rsta](https://docs.rs/rsta).
 
 Key components:
 

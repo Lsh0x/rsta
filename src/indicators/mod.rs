@@ -30,8 +30,8 @@
 //! 3. Or use `next()` for real-time updates with new data points
 //!
 //! ```rust,no_run
-//! use tars::indicators::Indicator;
-//! use tars::indicators::trend::SimpleMovingAverage;
+//! use rsta::indicators::Indicator;
+//! use rsta::indicators::trend::SimpleMovingAverage;
 //!
 //! // Create a new indicator instance
 //! let mut sma = SimpleMovingAverage::new(14).unwrap();
@@ -58,9 +58,9 @@
 //! Some indicators require OHLCV (Open, High, Low, Close, Volume) data:
 //!
 //! ```rust,no_run
-//! use tars::indicators::Indicator;
-//! use tars::indicators::volatility::AverageTrueRange;
-//! use tars::indicators::Candle;
+//! use rsta::indicators::Indicator;
+//! use rsta::indicators::volatility::AverageTrueRange;
+//! use rsta::indicators::Candle;
 //!
 //! // Create indicator
 //! let mut atr = AverageTrueRange::new(14).unwrap();

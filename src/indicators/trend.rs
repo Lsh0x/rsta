@@ -11,7 +11,8 @@ use std::collections::VecDeque;
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{SimpleMovingAverage, Indicator};
+/// use rsta::indicators::trend::SimpleMovingAverage;
+/// use rsta::indicators::Indicator;
 ///
 /// // Create a 5-period SMA
 /// let mut sma = SimpleMovingAverage::new(5).unwrap();
@@ -83,7 +84,8 @@ impl Indicator<f64, f64> for SimpleMovingAverage {
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{ExponentialMovingAverage, Indicator};
+/// use rsta::indicators::trend::ExponentialMovingAverage;
+/// use rsta::indicators::Indicator;
 ///
 /// // Create a 5-period EMA
 /// let mut ema = ExponentialMovingAverage::new(5).unwrap();

@@ -16,7 +16,8 @@ use std::collections::VecDeque;
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{RelativeStrengthIndex, Indicator};
+/// use rsta::indicators::momentum::RelativeStrengthIndex;
+/// use rsta::indicators::Indicator;
 ///
 /// // Create a 14-period RSI
 /// let mut rsi = RelativeStrengthIndex::new(14).unwrap();
@@ -191,8 +192,8 @@ impl Indicator<f64, f64> for RelativeStrengthIndex {
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{StochasticOscillator, Indicator, StochasticResult};
-/// use tars::indicators::Candle;
+/// use rsta::indicators::momentum::{StochasticOscillator, StochasticResult};
+/// use rsta::indicators::{Indicator, Candle};
 ///
 /// // Create a Stochastic Oscillator with %K period of 14 and %D period of 3
 /// let mut stoch = StochasticOscillator::new(14, 3).unwrap();
@@ -381,7 +382,8 @@ impl Indicator<Candle, StochasticResult> for StochasticOscillator {
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{WilliamsR, Indicator, Candle};
+/// use rsta::indicators::momentum::WilliamsR;
+/// use rsta::indicators::{Indicator, Candle};
 ///
 /// // Create a 14-period Williams %R
 /// let mut williams_r = WilliamsR::new(14).unwrap();

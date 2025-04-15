@@ -1,9 +1,9 @@
 [package]
-name = "tars"
+name = "rsta"
 version = "0.0.1"
 authors = ["LSH <github@lsh.tech>"]
 edition = "2021"
-description = "A Rust library for financial technical analysis indicators"
+description = "Rust Statistical Technical Analysis (RSTA) - A library for financial technical analysis indicators"
 license = "GPL-3.0"
 
 

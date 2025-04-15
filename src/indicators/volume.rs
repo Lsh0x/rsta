@@ -14,8 +14,9 @@ use std::collections::VecDeque;
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{OnBalanceVolume, Indicator};
-/// use tars::indicators::Candle;
+/// use rsta::indicators::volume::OnBalanceVolume;
+/// use rsta::indicators::Indicator;
+/// use rsta::indicators::Candle;
 ///
 /// // Create an OBV indicator
 /// let mut obv = OnBalanceVolume::new();
@@ -128,8 +129,9 @@ impl Indicator<Candle, f64> for OnBalanceVolume {
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{VolumeRateOfChange, Indicator};
-/// use tars::indicators::Candle;
+/// use rsta::indicators::volume::VolumeRateOfChange;
+/// use rsta::indicators::Indicator;
+/// use rsta::indicators::Candle;
 ///
 /// // Create a 14-period Volume Rate of Change indicator
 /// let mut vroc = VolumeRateOfChange::new(14).unwrap();
@@ -306,8 +308,9 @@ impl Indicator<Candle, f64> for VolumeRateOfChange {
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{AccumulationDistributionLine, Indicator};
-/// use tars::indicators::Candle;
+/// use rsta::indicators::volume::AccumulationDistributionLine;
+/// use rsta::indicators::Indicator;
+/// use rsta::indicators::Candle;
 ///
 /// // Create an A/D Line indicator
 /// let mut adl = AccumulationDistributionLine::new();
@@ -424,8 +427,9 @@ impl Indicator<Candle, f64> for AccumulationDistributionLine {
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{ChaikinMoneyFlow, Indicator};
-/// use tars::indicators::Candle;
+/// use rsta::indicators::volume::ChaikinMoneyFlow;
+/// use rsta::indicators::Indicator;
+/// use rsta::indicators::Candle;
 ///
 /// // Create a 20-period Chaikin Money Flow
 /// let mut cmf = ChaikinMoneyFlow::new(20).unwrap();
@@ -457,20 +461,167 @@ impl Indicator<Candle, f64> for AccumulationDistributionLine {
 ///     Candle { timestamp: 19, open: 47.2, high: 47.7, low: 46.5, close: 46.7, volume: 3100.0 },
 ///     Candle { timestamp: 20, open: 46.7, high: 47.0, low: 45.8, close: 46.0, volume: 3300.0 },
 ///     // Additional candles to see trend change
-///     Candle { timestamp: 21, open: 46.0, high: 46.5, low: 45.0, close: 45.2, volume: 3500.0 },
-///     Candle { timestamp: 22, open: 45.2, high: 45.7, low: 44.3, close: 44.5, volume: 3700.0 },
-/// ];
-///
+///    Candle { timestamp: 21, open: 46.0, high: 46.5, low: 45.0, close: 45.2, volume: 3500.0 },
+///     Candle { timestamp: 22, open: 45.2, high: 46.0, low: 44.5, close: 44.8, volume: 3700.0 }];
 /// // Calculate CMF values with error handling
 /// match cmf.calculate(&candles) {
 ///     Ok(cmf_values) => {
-///         // Access cmf values
+///         // Access the latest CMF value
+///         if let Some(latest_cmf) = cmf_values.last() {
+///             println!("CMF value: {:.2}", latest_cmf);     
+///             // Interpret the value
+///             if *latest_cmf > 0.0 {
+///                 println!("Accumulation phase - money flow into the security");
+///             } else {
+///                 println!("Distribution phase - money flow out of the security");
+///             }
+///         }
 ///     },
 ///     Err(e) => {
-///         // Handle error
+///         eprintln!("Error calculating CMF: {}", e);
 ///     }
 /// }
-/// ```
+///```
+
+#[derive(Debug)]
+pub struct ChaikinMoneyFlow {
+    period: usize,
+    mfv_buffer: VecDeque<f64>,
+    volume_buffer: VecDeque<f64>,
+}
+
+impl ChaikinMoneyFlow {
+    /// Create a new ChaikinMoneyFlow indicator
+    ///
+    /// # Arguments
+    /// * `period` - The period for CMF calculation (must be at least 1)
+    ///
+    /// # Returns
+    /// * `Result<Self, IndicatorError>` - A new ChaikinMoneyFlow or an error
+    pub fn new(period: usize) -> Result<Self, IndicatorError> {
+        validate_period(period, 1)?;
+
+        Ok(Self {
+            period,
+            mfv_buffer: VecDeque::with_capacity(period),
+            volume_buffer: VecDeque::with_capacity(period),
+        })
+    }
+
+    /// Calculate Money Flow Multiplier (MFM) for a candle
+    ///
+    /// # Arguments
+    /// * `candle` - The candle data to calculate MFM from
+    ///
+    /// # Returns
+    /// * `f64` - The Money Flow Multiplier value
+    fn money_flow_multiplier(candle: &Candle) -> Result<f64, IndicatorError> {
+        let high = candle.high;
+        let low = candle.low;
+        let close = candle.close;
+
+        let range = high - low;
+
+        if range == 0.0 {
+            return Err(IndicatorError::CalculationError(
+                "Division by zero: high and low prices are equal".to_string(),
+            ));
+        }
+
+        // Calculate Money Flow Multiplier
+        // MFM = ((Close - Low) - (High - Close)) / (High - Low)
+        // Simplified to: MFM = (2 * Close - High - Low) / (High - Low)
+        Ok((2.0 * close - high - low) / range)
+    }
+
+    /// Calculate Money Flow Volume (MFV) for a candle
+    ///
+    /// # Arguments
+    /// * `candle` - The candle data to calculate MFV from
+    ///
+    /// # Returns
+    /// * `f64` - The Money Flow Volume value
+    fn money_flow_volume(candle: &Candle) -> Result<f64, IndicatorError> {
+        let mfm = Self::money_flow_multiplier(candle)?;
+        let volume = candle.volume;
+
+        // Money Flow Volume = Money Flow Multiplier * Volume
+        Ok(mfm * volume)
+    }
+}
+
+impl Indicator<Candle, f64> for ChaikinMoneyFlow {
+    fn calculate(&mut self, data: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
+        validate_data_length(data, self.period)?;
+
+        let n = data.len();
+        let mut result = Vec::with_capacity(n - self.period + 1);
+
+        // Reset state
+        self.reset();
+
+        for candle in data.iter().take(n) {
+            let mfv = Self::money_flow_volume(candle)?;
+            self.mfv_buffer.push_back(mfv);
+            self.volume_buffer.push_back(candle.volume);
+
+            if self.mfv_buffer.len() > self.period {
+                self.mfv_buffer.pop_front();
+                self.volume_buffer.pop_front();
+            }
+
+            if self.mfv_buffer.len() == self.period {
+                let sum_mfv: f64 = self.mfv_buffer.iter().sum();
+                let sum_volume: f64 = self.volume_buffer.iter().sum();
+
+                if sum_volume == 0.0 {
+                    return Err(IndicatorError::CalculationError(
+                        "Division by zero: sum of volumes is zero".to_string(),
+                    ));
+                }
+
+                let cmf = sum_mfv / sum_volume;
+                result.push(cmf);
+            }
+        }
+
+        Ok(result)
+    }
+
+    fn next(&mut self, value: Candle) -> Result<Option<f64>, IndicatorError> {
+        let mfv = Self::money_flow_volume(&value)?;
+
+        self.mfv_buffer.push_back(mfv);
+        self.volume_buffer.push_back(value.volume);
+
+        if self.mfv_buffer.len() > self.period {
+            self.mfv_buffer.pop_front();
+            self.volume_buffer.pop_front();
+        }
+
+        if self.mfv_buffer.len() == self.period {
+            let sum_mfv: f64 = self.mfv_buffer.iter().sum();
+            let sum_volume: f64 = self.volume_buffer.iter().sum();
+
+            if sum_volume == 0.0 {
+                return Err(IndicatorError::CalculationError(
+                    "Division by zero: sum of volumes is zero".to_string(),
+                ));
+            }
+
+            let cmf = sum_mfv / sum_volume;
+            Ok(Some(cmf))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn reset(&mut self) {
+        self.mfv_buffer.clear();
+        self.volume_buffer.clear();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -957,184 +1108,5 @@ mod tests {
         // Sum of Volume = 1000 + 1200 = 2200
         // CMF = 1100 / 2200 = 0.5
         assert!((result[0] - 0.5).abs() < 0.01);
-    }
-    ///         if let Some(latest_cmf) = cmf_values.last() {
-    ///             println!("Chaikin Money Flow: {:.4}", latest_cmf); // Example output: Chaikin Money Flow: -0.2150
-    ///             
-    ///             // Interpret the CMF value
-    ///             if *latest_cmf > 0.0 {
-    ///                 println!("Buying pressure (accumulation)");
-    ///                 
-    ///                 if *latest_cmf > 0.25 {
-    ///                     println!("Strong buying pressure - bullish signal");
-    ///                 } else {
-    ///                     println!("Moderate buying pressure");
-    ///                 }
-    ///             } else {
-    ///                 println!("Selling pressure (distribution)");
-    ///                 
-    ///                 if *latest_cmf < -0.25 {
-    ///                     println!("Strong selling pressure - bearish signal");
-    ///                 } else {
-    ///                     println!("Moderate selling pressure");
-    ///                 }
-    ///             }
-    ///             
-    ///             // Check for divergence (price movement not confirmed by money flow)
-    ///             if cmf_values.len() >= 2 {
-    ///                 let previous_cmf = cmf_values[cmf_values.len() - 2];
-    ///                 let current_close = candles.last().unwrap().close;
-    ///                 let previous_close = candles[candles.len() - 2].close;
-    ///                 
-    ///                 if current_close > previous_close && *latest_cmf < previous_cmf {
-    ///                     println!("Bearish divergence: Price rising but money flow decreasing");
-    ///                 } else if current_close < previous_close && *latest_cmf > previous_cmf {
-    ///                     println!("Bullish divergence: Price falling but money flow increasing");
-    ///                 }
-    ///             }
-    ///         }
-    ///     },
-    ///     Err(e) => {
-    ///         eprintln!("Error calculating Chaikin Money Flow: {}", e);
-    ///     }
-    /// }
-    /// ```
-    #[derive(Debug)]
-    pub struct ChaikinMoneyFlow {
-        period: usize,
-        mfv_buffer: VecDeque<f64>,
-        volume_buffer: VecDeque<f64>,
-    }
-
-    impl ChaikinMoneyFlow {
-        /// Create a new ChaikinMoneyFlow indicator
-        ///
-        /// # Arguments
-        /// * `period` - The period for CMF calculation (must be at least 1)
-        ///
-        /// # Returns
-        /// * `Result<Self, IndicatorError>` - A new ChaikinMoneyFlow or an error
-        pub fn new(period: usize) -> Result<Self, IndicatorError> {
-            validate_period(period, 1)?;
-
-            Ok(Self {
-                period,
-                mfv_buffer: VecDeque::with_capacity(period),
-                volume_buffer: VecDeque::with_capacity(period),
-            })
-        }
-
-        /// Calculate Money Flow Multiplier (MFM) for a candle
-        ///
-        /// # Arguments
-        /// * `candle` - The candle data to calculate MFM from
-        ///
-        /// # Returns
-        /// * `f64` - The Money Flow Multiplier value
-        fn money_flow_multiplier(candle: &Candle) -> Result<f64, IndicatorError> {
-            let high = candle.high;
-            let low = candle.low;
-            let close = candle.close;
-
-            let range = high - low;
-
-            if range == 0.0 {
-                return Err(IndicatorError::CalculationError(
-                    "Division by zero: high and low prices are equal".to_string(),
-                ));
-            }
-
-            // Calculate Money Flow Multiplier
-            // MFM = ((Close - Low) - (High - Close)) / (High - Low)
-            // Simplified to: MFM = (2 * Close - High - Low) / (High - Low)
-            Ok((2.0 * close - high - low) / range)
-        }
-
-        /// Calculate Money Flow Volume (MFV) for a candle
-        ///
-        /// # Arguments
-        /// * `candle` - The candle data to calculate MFV from
-        ///
-        /// # Returns
-        /// * `f64` - The Money Flow Volume value
-        fn money_flow_volume(candle: &Candle) -> Result<f64, IndicatorError> {
-            let mfm = Self::money_flow_multiplier(candle)?;
-            let volume = candle.volume;
-
-            // Money Flow Volume = Money Flow Multiplier * Volume
-            Ok(mfm * volume)
-        }
-    }
-
-    impl Indicator<Candle, f64> for ChaikinMoneyFlow {
-        fn calculate(&mut self, data: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
-            validate_data_length(data, self.period)?;
-
-            let n = data.len();
-            let mut result = Vec::with_capacity(n - self.period + 1);
-
-            // Reset state
-            self.reset();
-
-            for candle in data.iter().take(n) {
-                let mfv = Self::money_flow_volume(candle)?;
-                self.mfv_buffer.push_back(mfv);
-                self.volume_buffer.push_back(candle.volume);
-
-                if self.mfv_buffer.len() > self.period {
-                    self.mfv_buffer.pop_front();
-                    self.volume_buffer.pop_front();
-                }
-
-                if self.mfv_buffer.len() == self.period {
-                    let sum_mfv: f64 = self.mfv_buffer.iter().sum();
-                    let sum_volume: f64 = self.volume_buffer.iter().sum();
-
-                    if sum_volume == 0.0 {
-                        return Err(IndicatorError::CalculationError(
-                            "Division by zero: sum of volumes is zero".to_string(),
-                        ));
-                    }
-
-                    let cmf = sum_mfv / sum_volume;
-                    result.push(cmf);
-                }
-            }
-
-            Ok(result)
-        }
-
-        fn next(&mut self, value: Candle) -> Result<Option<f64>, IndicatorError> {
-            let mfv = Self::money_flow_volume(&value)?;
-
-            self.mfv_buffer.push_back(mfv);
-            self.volume_buffer.push_back(value.volume);
-
-            if self.mfv_buffer.len() > self.period {
-                self.mfv_buffer.pop_front();
-                self.volume_buffer.pop_front();
-            }
-
-            if self.mfv_buffer.len() == self.period {
-                let sum_mfv: f64 = self.mfv_buffer.iter().sum();
-                let sum_volume: f64 = self.volume_buffer.iter().sum();
-
-                if sum_volume == 0.0 {
-                    return Err(IndicatorError::CalculationError(
-                        "Division by zero: sum of volumes is zero".to_string(),
-                    ));
-                }
-
-                let cmf = sum_mfv / sum_volume;
-                Ok(Some(cmf))
-            } else {
-                Ok(None)
-            }
-        }
-
-        fn reset(&mut self) {
-            self.mfv_buffer.clear();
-            self.volume_buffer.clear();
-        }
     }
 } // Close the test module
