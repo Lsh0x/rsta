@@ -17,7 +17,9 @@ use std::collections::VecDeque;
 /// # Example
 ///
 /// ```no_run
-/// use tars::indicators::{AverageTrueRange, Indicator, Candle};
+/// use rsta::indicators::volatility::AverageTrueRange;
+/// use rsta::indicators::Indicator;
+/// use rsta::indicators::Candle;
 ///
 /// // Create a 14-period ATR
 /// let mut atr = AverageTrueRange::new(14).unwrap();
@@ -172,7 +174,8 @@ impl Indicator<Candle, f64> for AverageTrueRange {
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{StandardDeviation, Indicator};
+/// use rsta::indicators::volatility::StandardDeviation;
+/// use rsta::indicators::Indicator;
 ///
 /// // Create a 20-period Standard Deviation indicator
 /// let mut std_dev = StandardDeviation::new(20).unwrap();
@@ -296,7 +299,8 @@ pub struct BollingerBandsResult {
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{BollingerBands, Indicator};
+/// use rsta::indicators::volatility::BollingerBands;
+/// use rsta::indicators::Indicator;
 ///
 /// // Create a Bollinger Bands indicator with 20-period SMA and 2 standard deviations
 /// let mut bollinger = BollingerBands::new(20, 2.0).unwrap();
@@ -445,8 +449,9 @@ pub struct KeltnerChannelsResult {
 /// # Example
 ///
 /// ```
-/// use tars::indicators::{KeltnerChannels, Indicator, KeltnerChannelsResult};
-/// use tars::indicators::Candle;
+/// use rsta::indicators::volatility::{KeltnerChannels, KeltnerChannelsResult};
+/// use rsta::indicators::Indicator;
+/// use rsta::indicators::Candle;
 ///
 /// // Create a Keltner Channels indicator with EMA period 20, ATR period 10, and multiplier 2.0
 /// let mut keltner = KeltnerChannels::new(20, 10, 2.0).unwrap();

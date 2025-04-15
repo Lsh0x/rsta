@@ -16,7 +16,9 @@ use super::traits::PriceDataAccessor;
 /// Creating and using candle data:
 ///
 /// ```
-/// use tars::indicators::{Candle, AverageTrueRange, Indicator};
+/// use rsta::indicators::volatility::AverageTrueRange;
+/// use rsta::indicators::Indicator;
+/// use rsta::indicators::Candle;
 ///
 /// // Create a series of candlesticks
 /// let candles = vec![

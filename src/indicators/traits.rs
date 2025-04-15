@@ -23,7 +23,9 @@ use super::error::IndicatorError;
 /// Basic usage with a simple moving average:
 ///
 /// ```rust,no_run
-/// use tars::indicators::{SimpleMovingAverage, Indicator};
+/// use rsta::indicators::trend::SimpleMovingAverage;
+/// use rsta::indicators::Indicator;
+/// // use of Indicator trait from this module
 /// // Create a 14-period SMA
 /// let mut sma = SimpleMovingAverage::new(14).unwrap();
 ///
@@ -46,7 +48,9 @@ use super::error::IndicatorError;
 /// Using with a complex indicator like Bollinger Bands:
 ///
 /// ```rust,no_run
-/// use tars::indicators::{BollingerBands, BollingerBandsResult, Indicator};
+/// use rsta::indicators::volatility::{BollingerBands, BollingerBandsResult};
+/// use rsta::indicators::Indicator;
+/// // use of Indicator trait from this module
 /// // Create Bollinger Bands with 20-period and 2 standard deviations
 /// let mut bb = BollingerBands::new(20, 2.0).unwrap();
 ///
@@ -121,7 +125,9 @@ pub trait Indicator<T, O> {
 /// Creating a function that works with any price data type:
 ///
 /// ```rust,no_run
-/// use tars::indicators::{PriceDataAccessor, Candle};
+/// use rsta::indicators::Candle;
+/// use rsta::indicators::PriceDataAccessor;
+/// // use of PriceDataAccessor trait from this module
 ///
 /// // Function that calculates the range (high - low) for any price data type
 /// fn calculate_range<T, P: PriceDataAccessor<T>>(accessor: &P, data: &[T]) -> Vec<f64> {

@@ -14,7 +14,9 @@ use thiserror::Error;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use tars::indicators::{SimpleMovingAverage, Indicator, IndicatorError};
+/// use rsta::indicators::trend::SimpleMovingAverage;
+/// use rsta::indicators::IndicatorError;
+/// use rsta::indicators::Indicator;
 ///
 /// // Handle a parameter validation error
 /// match SimpleMovingAverage::new(0) {
@@ -24,7 +26,9 @@ use thiserror::Error;
 /// ```
 ///
 /// ```rust
-/// use tars::indicators::{SimpleMovingAverage, Indicator, IndicatorError};
+/// use rsta::indicators::trend::SimpleMovingAverage;
+/// use rsta::indicators::IndicatorError;
+/// use rsta::indicators::Indicator;
 ///
 /// // Handle an insufficient data error
 /// let mut sma = SimpleMovingAverage::new(14).unwrap();
