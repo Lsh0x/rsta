@@ -778,6 +778,326 @@ mod tests {
         assert_eq!(obv.next(candle2).unwrap(), Some(0.0));
     }
 
+    #[test]
+    fn test_obv_zero_volume() {
+        let mut obv = OnBalanceVolume::new();
+
+        // Create test candles with zero volume
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.5,
+                volume: 1000.0,
+            }, // Initial candle with volume
+            Candle {
+                timestamp: 2,
+                open: 10.5,
+                high: 12.0,
+                low: 10.0,
+                close: 11.0,
+                volume: 0.0,
+            }, // Price up but zero volume
+            Candle {
+                timestamp: 3,
+                open: 11.0,
+                high: 11.5,
+                low: 10.0,
+                close: 10.0,
+                volume: 0.0,
+            }, // Price down but zero volume
+        ];
+
+        let result = obv.calculate(&candles).unwrap();
+
+        // First value is 0 by OBV definition
+        assert_eq!(result[0], 0.0);
+
+        // Second value should be unchanged from first because volume is 0
+        assert_eq!(result[1], 0.0);
+
+        // Third value should be unchanged from second because volume is 0
+        assert_eq!(result[2], 0.0);
+
+        // Test with streaming calculation too
+        obv.reset();
+        assert_eq!(obv.next(candles[0]).unwrap(), Some(0.0));
+        assert_eq!(obv.next(candles[1]).unwrap(), Some(0.0)); // Zero volume should not change OBV
+        assert_eq!(obv.next(candles[2]).unwrap(), Some(0.0)); // Zero volume should not change OBV
+    }
+
+    #[test]
+    fn test_obv_extreme_volume_values() {
+        let mut obv = OnBalanceVolume::new();
+
+        // Create test candles with extreme volume values
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.5,
+                volume: 1000.0,
+            }, // Initial price
+            Candle {
+                timestamp: 2,
+                open: 10.5,
+                high: 12.0,
+                low: 10.0,
+                close: 11.0,
+                volume: 1_000_000_000.0, // Extremely large volume
+            }, // Price up
+            Candle {
+                timestamp: 3,
+                open: 11.0,
+                high: 11.5,
+                low: 10.0,
+                close: 10.0,
+                volume: 500_000_000.0, // Another large volume
+            }, // Price down
+        ];
+
+        let result = obv.calculate(&candles).unwrap();
+
+        // First value is 0 by OBV definition
+        assert_eq!(result[0], 0.0);
+
+        // Second value: add the large volume (price up)
+        assert_eq!(result[1], 1_000_000_000.0);
+
+        // Third value: subtract the large volume (price down)
+        assert_eq!(result[2], 1_000_000_000.0 - 500_000_000.0);
+    }
+
+    #[test]
+    fn test_obv_identical_closing_prices() {
+        let mut obv = OnBalanceVolume::new();
+
+        // Create test candles with identical closing prices
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.5,
+                volume: 1000.0,
+            }, // Initial price
+            Candle {
+                timestamp: 2,
+                open: 10.5,
+                high: 12.0,
+                low: 10.0,
+                close: 10.5, // Same close as previous
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 10.5,
+                high: 11.5,
+                low: 10.0,
+                close: 10.5, // Same close again
+                volume: 800.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.5,
+                high: 11.0,
+                low: 10.0,
+                close: 10.5, // Same close again
+                volume: 900.0,
+            },
+        ];
+
+        let result = obv.calculate(&candles).unwrap();
+
+        // First value is 0 by OBV definition
+        assert_eq!(result[0], 0.0);
+
+        // All subsequent values should remain at 0 since prices are unchanged
+        // and OBV should not change when close prices are identical
+        assert_eq!(result[1], 0.0);
+        assert_eq!(result[2], 0.0);
+        assert_eq!(result[3], 0.0);
+    }
+
+    #[test]
+    fn test_obv_consecutive_up_down_sequences() {
+        let mut obv = OnBalanceVolume::new();
+
+        // Create test candles with alternating up/down patterns
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1000.0,
+            }, // Initial price
+            Candle {
+                timestamp: 2,
+                open: 10.0,
+                high: 12.0,
+                low: 10.0,
+                close: 11.0, // Up
+                volume: 500.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 11.0,
+                high: 11.5,
+                low: 9.5,
+                close: 10.0, // Down
+                volume: 300.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.0,
+                high: 10.5,
+                low: 9.0,
+                close: 10.5, // Up
+                volume: 700.0,
+            },
+            Candle {
+                timestamp: 5,
+                open: 10.5,
+                high: 11.0,
+                low: 9.5,
+                close: 9.5, // Down
+                volume: 400.0,
+            },
+            Candle {
+                timestamp: 6,
+                open: 9.5,
+                high: 10.5,
+                low: 9.0,
+                close: 10.0, // Up
+                volume: 600.0,
+            },
+        ];
+
+        let result = obv.calculate(&candles).unwrap();
+
+        // First value is 0 by OBV definition
+        assert_eq!(result[0], 0.0);
+
+        // Check the pattern matches our expectation:
+        // Initial: 0
+        // Up: +500 => 500
+        // Down: -300 => 200
+        // Up: +700 => 900
+        // Down: -400 => 500
+        // Up: +600 => 1100
+        assert_eq!(result[1], 500.0); // +500
+        assert_eq!(result[2], 200.0); // +500-300
+        assert_eq!(result[3], 900.0); // +500-300+700
+        assert_eq!(result[4], 500.0); // +500-300+700-400
+        assert_eq!(result[5], 1100.0); // +500-300+700-400+600
+
+        // Test streaming calculation matches batch calculation
+        let mut streaming_obv = OnBalanceVolume::new();
+        for (i, candle) in candles.iter().enumerate() {
+            let obv_value = streaming_obv.next(*candle).unwrap().unwrap();
+            assert_eq!(
+                obv_value, result[i],
+                "Streaming calculation mismatch at index {}",
+                i
+            );
+        }
+    }
+
+    #[test]
+    fn test_obv_insufficient_data() {
+        let mut obv = OnBalanceVolume::new();
+
+        // Test with empty data
+        let empty: Vec<Candle> = vec![];
+        let result = obv.calculate(&empty);
+
+        // Should error due to insufficient data (require at least 1 data point)
+        assert!(result.is_err());
+        if let Err(IndicatorError::InsufficientData(_)) = result {
+            // Expected error
+        } else {
+            panic!("Expected InsufficientData error");
+        }
+    }
+
+    #[test]
+    fn test_obv_batch_vs_streaming_consistency() {
+        let mut batch_obv = OnBalanceVolume::new();
+        let mut streaming_obv = OnBalanceVolume::new();
+
+        // Create test data with different patterns
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.0,
+                high: 12.0,
+                low: 10.0,
+                close: 11.0,
+                volume: 1500.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 11.0,
+                high: 11.5,
+                low: 9.5,
+                close: 10.0,
+                volume: 800.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.0,
+                high: 10.5,
+                low: 9.0,
+                close: 10.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 5,
+                open: 10.0,
+                high: 11.0,
+                low: 9.5,
+                close: 10.5,
+                volume: 2000.0,
+            },
+        ];
+
+        // Calculate batch result
+        let batch_result = batch_obv.calculate(&candles).unwrap();
+
+        // Calculate streaming result
+        let mut streaming_result = Vec::with_capacity(candles.len());
+        for candle in &candles {
+            let value = streaming_obv.next(*candle).unwrap().unwrap();
+            streaming_result.push(value);
+        }
+
+        // Compare results - they should be identical
+        assert_eq!(batch_result.len(), streaming_result.len());
+
+        for i in 0..batch_result.len() {
+            assert_eq!(
+                batch_result[i], streaming_result[i],
+                "Batch and streaming results differ at index {}",
+                i
+            );
+        }
+    }
+
     // AccumulationDistributionLine Tests
     #[test]
     fn test_adl_new() {
@@ -906,6 +1226,254 @@ mod tests {
         // MFM = ((12 - 9) - (13 - 12)) / (13 - 9) = (3 - 1) / 4 = 0.5
         // ADL = 0.5 * 1200 = 600
         assert!((result.unwrap() - 600.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_adl_money_flow_multiplier_zero_range() {
+        // Test with high-low range of zero (should error)
+        let candle = Candle {
+            timestamp: 1,
+            open: 10.0,
+            high: 10.0, // Same as low
+            low: 10.0,  // Same as high
+            close: 10.0,
+            volume: 1000.0,
+        };
+
+        // Directly test the money_flow_multiplier function
+        let result = AccumulationDistributionLine::money_flow_multiplier(&candle);
+        assert!(result.is_err());
+
+        // Verify it's the correct error type and message
+        if let Err(IndicatorError::CalculationError(msg)) = result {
+            assert!(
+                msg.contains("division by zero") || msg.contains("high and low prices are equal")
+            );
+        } else {
+            panic!("Expected CalculationError for zero range");
+        }
+
+        // Test error propagation in batch calculation
+        let mut adl = AccumulationDistributionLine::new();
+        let result = adl.calculate(&[candle]);
+        assert!(result.is_err());
+
+        // Test error propagation in streaming calculation
+        let mut adl = AccumulationDistributionLine::new();
+        let result = adl.next(candle);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_adl_consecutive_identical_prices() {
+        let mut adl = AccumulationDistributionLine::new();
+
+        // Create candles with identical prices (but different high/low)
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0, // Same close as previous
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0, // Same close as previous
+                volume: 800.0,
+            },
+        ];
+
+        let result = adl.calculate(&candles).unwrap();
+
+        // Verify the ADL values for each candle
+        assert_eq!(result.len(), 3);
+
+        // Calculate expected values
+        // First candle: MFM = (2*10 - 11 - 9)/(11 - 9) = 0.0, MFV = 0.0 * 1000 = 0
+        // Second candle: MFM = (2*10 - 11 - 9)/(11 - 9) = 0.0, MFV = 0.0 * 1200 = 0
+        // Third candle: MFM = (2*10 - 11 - 9)/(11 - 9) = 0.0, MFV = 0.0 * 800 = 0
+
+        // Since all MFMs are 0, the ADL should remain at 0
+        assert!((result[0] - 0.0).abs() < 0.001);
+        assert!((result[1] - 0.0).abs() < 0.001);
+        assert!((result[2] - 0.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_adl_extreme_volume_scenarios() {
+        let mut adl = AccumulationDistributionLine::new();
+
+        // Create candles with extreme volume values
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 11.0,
+                volume: 10_000_000.0, // Very large volume
+            },
+            Candle {
+                timestamp: 2,
+                open: 11.0,
+                high: 13.0,
+                low: 9.0,
+                close: 12.0,
+                volume: 0.1, // Very small volume
+            },
+            Candle {
+                timestamp: 3,
+                open: 12.0,
+                high: 15.0,
+                low: 10.0,
+                close: 11.0,
+                volume: 999_999_999.0, // Extremely large volume
+            },
+        ];
+
+        let result = adl.calculate(&candles).unwrap();
+        assert_eq!(result.len(), 3);
+
+        // First candle: MFM = (2*11 - 12 - 8)/(12 - 8) = 0.5, MFV = 0.5 * 10_000_000 = 5_000_000
+        assert!((result[0] - 5_000_000.0).abs() < 0.1);
+
+        // Second candle: MFM = (2*12 - 13 - 9)/(13 - 9) = 0.5, MFV = 0.5 * 0.1 = 0.05
+        // ADL = previous + 0.05 = 5_000_000.05
+        assert!((result[1] - 5_000_000.05).abs() < 0.1);
+
+        // Third candle: MFM = (2*11 - 15 - 10)/(15 - 10) = -0.6, MFV = -0.6 * 999_999_999 = -599_999_999.4
+        // ADL = previous + (-599_999_999.4) = -594_999_999.35
+        assert!((result[2] - (-594_999_999.35)).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_adl_batch_vs_streaming_consistency() {
+        let mut batch_adl = AccumulationDistributionLine::new();
+        let mut streaming_adl = AccumulationDistributionLine::new();
+
+        // Create test data with different patterns
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 11.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 11.0,
+                high: 14.0,
+                low: 10.0,
+                close: 13.0,
+                volume: 1500.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 13.0,
+                high: 15.0,
+                low: 11.0,
+                close: 12.0,
+                volume: 800.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 12.0,
+                high: 13.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1200.0,
+            },
+        ];
+
+        // Calculate batch result
+        let batch_result = batch_adl.calculate(&candles).unwrap();
+
+        // Calculate streaming result
+        let mut streaming_result = Vec::with_capacity(candles.len());
+        for candle in &candles {
+            let value = streaming_adl.next(*candle).unwrap().unwrap();
+            streaming_result.push(value);
+        }
+
+        // Compare results - they should be identical
+        assert_eq!(batch_result.len(), streaming_result.len());
+
+        for i in 0..batch_result.len() {
+            assert!(
+                (batch_result[i] - streaming_result[i]).abs() < 0.001,
+                "Batch and streaming results differ at index {}: batch={}, streaming={}",
+                i,
+                batch_result[i],
+                streaming_result[i]
+            );
+        }
+    }
+
+    #[test]
+    fn test_adl_insufficient_data() {
+        let mut adl = AccumulationDistributionLine::new();
+
+        // Test with empty data
+        let empty: Vec<Candle> = vec![];
+        let result = adl.calculate(&empty);
+
+        // Should error with insufficient data
+        assert!(result.is_err());
+        if let Err(IndicatorError::InsufficientData(_)) = result {
+            // Expected error
+        } else {
+            panic!("Expected InsufficientData error");
+        }
+    }
+
+    #[test]
+    fn test_adl_edge_cases() {
+        let mut adl = AccumulationDistributionLine::new();
+
+        // Test with zero volume (should not cause errors, just have no effect on ADL)
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 11.0,
+                volume: 1000.0, // Normal volume
+            },
+            Candle {
+                timestamp: 2,
+                open: 11.0,
+                high: 13.0,
+                low: 9.0,
+                close: 12.0,
+                volume: 0.0, // Zero volume
+            },
+        ];
+
+        let result = adl.calculate(&candles).unwrap();
+        assert_eq!(result.len(), 2);
+
+        // First value: MFM = (2*11 - 12 - 8)/(12 - 8) = 0.5, MFV = 0.5 * 1000 = 500
+        assert!((result[0] - 500.0).abs() < 0.01);
+
+        // Second value: MFM = (2*12 - 13 - 9)/(13 - 9) = 0.5, MFV = 0.5 * 0 = 0
+        // ADL = previous + 0 = 500
+        assert!((result[1] - 500.0).abs() < 0.01);
     }
 
     // VolumeRateOfChange Tests
@@ -1049,7 +1617,348 @@ mod tests {
         assert_eq!(vroc.next(candle3).unwrap(), None);
     }
 
-    // ChaikinMoneyFlow Tests
+    #[test]
+    fn test_vroc_past_volume_zero() {
+        let mut vroc = VolumeRateOfChange::new(2).unwrap();
+
+        // Create candles with zero volume at the reference point
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 0.0, // Zero volume at reference point
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1500.0,
+            },
+        ];
+
+        // Should return an error for division by zero
+        let result = vroc.calculate(&candles);
+        assert!(result.is_err());
+
+        // Verify it's the correct error type and message
+        if let Err(IndicatorError::CalculationError(msg)) = result {
+            assert!(msg.contains("division by zero") || msg.contains("zero"));
+        } else {
+            panic!("Expected CalculationError");
+        }
+
+        // Test with streaming calculation too
+        vroc.reset();
+        assert_eq!(vroc.next(candles[0]).unwrap(), None); // Not enough data yet
+        assert_eq!(vroc.next(candles[1]).unwrap(), None); // Not enough data yet
+
+        // This should error due to division by zero
+        let next_result = vroc.next(candles[2]);
+        assert!(next_result.is_err());
+
+        // Verify it's the correct error type
+        if let Err(IndicatorError::CalculationError(msg)) = next_result {
+            assert!(msg.contains("division by zero") || msg.contains("zero"));
+        } else {
+            panic!("Expected CalculationError");
+        }
+    }
+
+    #[test]
+    fn test_vroc_minimum_period() {
+        // Test with period = 1 (minimum valid period)
+        let mut vroc = VolumeRateOfChange::new(1).unwrap();
+
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1500.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 2000.0,
+            },
+        ];
+
+        let result = vroc.calculate(&candles).unwrap();
+
+        // With period = 1, we should get n-1 results
+        assert_eq!(result.len(), 2);
+
+        // First VROC: (1500 - 1000) / 1000 * 100 = 50%
+        assert!((result[0] - 50.0).abs() < 0.001);
+
+        // Second VROC: (2000 - 1500) / 1500 * 100 = 33.33%
+        assert!((result[1] - 33.33).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_vroc_large_period() {
+        // Test with period close to data length
+        let data_length = 10;
+        let period = data_length - 1; // Use period = 9 for data length of 10
+
+        let mut vroc = VolumeRateOfChange::new(period).unwrap();
+
+        // Create 10 candles with sequential volumes
+        let mut candles = Vec::with_capacity(data_length);
+        for i in 0..data_length {
+            candles.push(Candle {
+                timestamp: i as u64,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1000.0 * (i + 1) as f64, // Volumes: 1000, 2000, 3000, ...
+            });
+        }
+
+        let result = vroc.calculate(&candles).unwrap();
+
+        // With period = 9 and data length = 10, we should get 1 result
+        assert_eq!(result.len(), 1);
+
+        // VROC: (10000 - 1000) / 1000 * 100 = 900%
+        assert!((result[0] - 900.0).abs() < 0.001);
+        // Test boundary cases with data length
+        // For VolumeRateOfChange, we need at least period+1 data points
+        // With 10 candles:
+        // - period = 9 works (needs 10 data points, we have 10)
+        // - period = 10 doesn't work (needs 11 data points, we only have 10)
+
+        // Test with period = 9 (should work with 10 data points)
+        let mut vroc_large = VolumeRateOfChange::new(9).unwrap();
+        let result = vroc_large.calculate(&candles);
+        assert!(result.is_ok()); // Should have enough data
+
+        // Test with period = 10 (should fail with only 10 data points since we need period+1)
+        let mut vroc_too_large = VolumeRateOfChange::new(10).unwrap();
+        let result = vroc_too_large.calculate(&candles);
+        assert!(result.is_err()); // Should not be enough data
+        assert!(result.is_err()); // Should not be enough data
+    }
+
+    #[test]
+    fn test_vroc_reset_streaming() {
+        let mut vroc = VolumeRateOfChange::new(2).unwrap();
+
+        // Create test candles
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1500.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1800.0,
+            },
+        ];
+
+        // Process first three candles
+        vroc.next(candles[0]).unwrap();
+        vroc.next(candles[1]).unwrap();
+        let first_result = vroc.next(candles[2]).unwrap().unwrap();
+
+        // Reset indicator
+        vroc.reset();
+
+        // Process the candles again in a different order
+        vroc.next(candles[1]).unwrap();
+        vroc.next(candles[2]).unwrap();
+        let second_result = vroc.next(candles[3]).unwrap().unwrap();
+
+        // Results should be different as we've processed different candles
+        // First: (1500-1000)/1000*100 = 50%
+        // Second: (1800-1200)/1200*100 = 50%
+        assert_eq!(first_result, 50.0);
+        assert_eq!(second_result, 50.0);
+
+        // Now reset and verify we need to process 3 candles again
+        vroc.reset();
+        assert_eq!(vroc.next(candles[0]).unwrap(), None);
+        assert_eq!(vroc.next(candles[1]).unwrap(), None);
+        assert!(vroc.next(candles[2]).unwrap().is_some());
+    }
+
+    #[test]
+    fn test_vroc_batch_vs_streaming() {
+        let period = 3;
+        let mut batch_vroc = VolumeRateOfChange::new(period).unwrap();
+        let mut streaming_vroc = VolumeRateOfChange::new(period).unwrap();
+
+        // Create test data
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1500.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1800.0,
+            },
+            Candle {
+                timestamp: 5,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 2100.0,
+            },
+        ];
+
+        // Calculate batch result
+        let batch_result = batch_vroc.calculate(&candles).unwrap();
+
+        // Calculate streaming result
+        let mut streaming_result = Vec::new();
+        for candle in &candles {
+            if let Some(value) = streaming_vroc.next(*candle).unwrap() {
+                streaming_result.push(value);
+            }
+        }
+
+        // Compare results - they should be identical
+        assert_eq!(batch_result.len(), streaming_result.len());
+
+        for i in 0..batch_result.len() {
+            assert!(
+                (batch_result[i] - streaming_result[i]).abs() < 0.001,
+                "Batch and streaming results differ at index {}: batch={}, streaming={}",
+                i,
+                batch_result[i],
+                streaming_result[i]
+            );
+        }
+    }
+
+    #[test]
+    fn test_vroc_extreme_volume_values() {
+        let mut vroc = VolumeRateOfChange::new(2).unwrap();
+
+        // Create candles with extreme volume values
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 100.0, // Small volume
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 1_000_000_000.0, // Very large volume
+            },
+            Candle {
+                timestamp: 3,
+                open: 10.0,
+                high: 11.0,
+                low: 9.0,
+                close: 10.0,
+                volume: 5_000_000_000.0, // Extremely large volume
+            },
+        ];
+
+        let result = vroc.calculate(&candles).unwrap();
+
+        // We need at least period+1 candles, and we get n-period results
+        assert_eq!(result.len(), 1);
+
+        // VROC: (5_000_000_000.0 - 100.0) / 100.0 * 100 = 4,999,999,900%
+        assert!(
+            result[0] > 4_000_000_000.0,
+            "Extreme VROC value not calculated correctly"
+        );
+
+        // Test with streaming calculation
+        vroc.reset();
+        assert_eq!(vroc.next(candles[0]).unwrap(), None); // Not enough data yet
+        assert_eq!(vroc.next(candles[1]).unwrap(), None); // Not enough data yet
+
+        let streaming_result = vroc.next(candles[2]).unwrap().unwrap();
+        assert!((streaming_result - result[0]).abs() < 0.001);
+    }
     #[test]
     fn test_cmf_new() {
         // Valid period should work
@@ -1108,5 +2017,381 @@ mod tests {
         // Sum of Volume = 1000 + 1200 = 2200
         // CMF = 1100 / 2200 = 0.5
         assert!((result[0] - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_cmf_zero_volume_sum() {
+        let mut cmf = ChaikinMoneyFlow::new(2).unwrap();
+
+        // Create candles with zero volume
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 11.0,
+                volume: 0.0, // Zero volume
+            },
+            Candle {
+                timestamp: 2,
+                open: 11.0,
+                high: 13.0,
+                low: 9.0,
+                close: 12.0,
+                volume: 0.0, // Zero volume
+            },
+        ];
+
+        // Should error with division by zero
+        let result = cmf.calculate(&candles);
+        assert!(result.is_err());
+
+        // Verify it's the correct error type and message
+        if let Err(IndicatorError::CalculationError(msg)) = result {
+            assert!(msg.contains("division by zero") || msg.contains("sum of volumes is zero"));
+        } else {
+            panic!("Expected CalculationError for zero volume sum");
+        }
+
+        // Test streaming calculation
+        cmf.reset();
+        assert_eq!(cmf.next(candles[0]).unwrap(), None); // Not enough data yet
+        let result = cmf.next(candles[1]);
+
+        assert!(result.is_err());
+        if let Err(IndicatorError::CalculationError(msg)) = result {
+            assert!(msg.contains("division by zero") || msg.contains("sum of volumes is zero"));
+        } else {
+            panic!("Expected CalculationError for zero volume sum in streaming mode");
+        }
+    }
+
+    #[test]
+    fn test_cmf_boundary_conditions() {
+        let mut cmf = ChaikinMoneyFlow::new(3).unwrap();
+
+        // Create candles that should produce CMF values close to boundaries
+        // For CMF near +1: High MFM (close near high) with consistent volume
+        let max_candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 11.9, // Close near high
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 11.9,
+                high: 14.0,
+                low: 11.0,
+                close: 13.9, // Close near high
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 13.9,
+                high: 16.0,
+                low: 13.0,
+                close: 15.9, // Close near high
+                volume: 1000.0,
+            },
+        ];
+
+        // For CMF near -1: Low MFM (close near low) with consistent volume
+        let min_candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 8.1, // Close near low
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 8.1,
+                high: 10.0,
+                low: 7.0,
+                close: 7.1, // Close near low
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 7.1,
+                high: 9.0,
+                low: 6.0,
+                close: 6.1, // Close near low
+                volume: 1000.0,
+            },
+        ];
+
+        // Test near maximum value
+        let max_result = cmf.calculate(&max_candles).unwrap();
+        assert_eq!(max_result.len(), 1);
+        assert!(
+            max_result[0] > 0.9,
+            "CMF value should be close to +1, got {}",
+            max_result[0]
+        );
+        assert!(
+            max_result[0] <= 1.0,
+            "CMF value should not exceed +1, got {}",
+            max_result[0]
+        );
+
+        // Test near minimum value
+        cmf.reset();
+        let min_result = cmf.calculate(&min_candles).unwrap();
+        assert_eq!(min_result.len(), 1);
+        assert!(
+            min_result[0] < -0.9,
+            "CMF value should be close to -1, got {}",
+            min_result[0]
+        );
+        assert!(
+            min_result[0] >= -1.0,
+            "CMF value should not be less than -1, got {}",
+            min_result[0]
+        );
+    }
+
+    #[test]
+    fn test_cmf_minimum_period() {
+        // Test with period = 1 (minimum valid period)
+        let mut cmf = ChaikinMoneyFlow::new(1).unwrap();
+
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 11.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 11.0,
+                high: 13.0,
+                low: 9.0,
+                close: 12.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 12.0,
+                high: 14.0,
+                low: 10.0,
+                close: 11.0,
+                volume: 800.0,
+            },
+        ];
+
+        let result = cmf.calculate(&candles).unwrap();
+
+        // With period = 1, we should get result for each candle
+        assert_eq!(result.len(), 3);
+
+        // First candle: MFM = (2*11 - 12 - 8)/(12 - 8) = 0.5, CMF = 0.5
+        assert!((result[0] - 0.5).abs() < 0.001);
+
+        // Second candle: MFM = (2*12 - 13 - 9)/(13 - 9) = 0.5, CMF = 0.5
+        assert!((result[1] - 0.5).abs() < 0.001);
+
+        // Third candle: MFM = (2*11 - 14 - 10)/(14 - 10) = -0.5, CMF = -0.5
+        assert!((result[2] - (-0.5)).abs() < 0.001);
+
+        // Test streaming calculation with minimum period
+        cmf.reset();
+        assert_eq!(cmf.next(candles[0]).unwrap().unwrap(), 0.5);
+        assert_eq!(cmf.next(candles[1]).unwrap().unwrap(), 0.5);
+        assert!((cmf.next(candles[2]).unwrap().unwrap() - (-0.5)).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_cmf_reset_partial_data() {
+        let mut cmf = ChaikinMoneyFlow::new(3).unwrap();
+
+        // Create test candles
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 11.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 11.0,
+                high: 13.0,
+                low: 9.0,
+                close: 12.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 12.0,
+                high: 14.0,
+                low: 10.0,
+                close: 11.0,
+                volume: 800.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 11.0,
+                high: 13.0,
+                low: 9.0,
+                close: 12.0,
+                volume: 1500.0,
+            },
+            Candle {
+                timestamp: 5,
+                open: 12.0,
+                high: 15.0,
+                low: 11.0,
+                close: 14.0,
+                volume: 2000.0,
+            },
+        ];
+
+        // Process first two candles
+        cmf.next(candles[0]).unwrap();
+        cmf.next(candles[1]).unwrap();
+
+        // Reset and process different candles
+        cmf.reset();
+
+        cmf.next(candles[2]).unwrap();
+        cmf.next(candles[3]).unwrap();
+
+        // We need one more candle to get a result with period = 3
+        let result = cmf.next(candles[4]).unwrap();
+        assert!(result.is_some());
+
+        // Verify that CMF calculation after reset uses only the new data
+        // This should be based on candles 2, 3, and 4, not include candles 0 and 1
+
+        // Calculate expected result from batch calculation for verification
+        cmf.reset();
+        let expected = cmf.calculate(&candles[2..5]).unwrap()[0];
+
+        assert!((result.unwrap() - expected).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_cmf_batch_vs_streaming() {
+        let period = 3;
+        let mut batch_cmf = ChaikinMoneyFlow::new(period).unwrap();
+        let mut streaming_cmf = ChaikinMoneyFlow::new(period).unwrap();
+
+        // Create test data
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 11.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 11.0,
+                high: 13.0,
+                low: 9.0,
+                close: 12.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 12.0,
+                high: 14.0,
+                low: 10.0,
+                close: 11.0,
+                volume: 800.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 11.0,
+                high: 13.0,
+                low: 9.0,
+                close: 12.0,
+                volume: 1500.0,
+            },
+            Candle {
+                timestamp: 5,
+                open: 12.0,
+                high: 15.0,
+                low: 11.0,
+                close: 14.0,
+                volume: 2000.0,
+            },
+        ];
+
+        // Calculate batch result
+        let batch_result = batch_cmf.calculate(&candles).unwrap();
+
+        // Calculate streaming result
+        let mut streaming_result = Vec::new();
+        for candle in &candles {
+            if let Some(value) = streaming_cmf.next(*candle).unwrap() {
+                streaming_result.push(value);
+            }
+        }
+
+        // Compare results - they should be identical
+        assert_eq!(batch_result.len(), streaming_result.len());
+
+        for i in 0..batch_result.len() {
+            assert!(
+                (batch_result[i] - streaming_result[i]).abs() < 0.001,
+                "Batch and streaming results differ at index {}: batch={}, streaming={}",
+                i,
+                batch_result[i],
+                streaming_result[i]
+            );
+        }
+    }
+
+    #[test]
+    fn test_cmf_extreme_volume_values() {
+        let mut cmf = ChaikinMoneyFlow::new(2).unwrap();
+
+        // Create candles with extreme volume values
+        let candles = vec![
+            Candle {
+                timestamp: 1,
+                open: 10.0,
+                high: 12.0,
+                low: 8.0,
+                close: 11.0,
+                volume: 1_000_000_000.0, // Very large volume
+            },
+            Candle {
+                timestamp: 2,
+                open: 11.0,
+                high: 13.0,
+                low: 9.0,
+                close: 12.0,
+                volume: 2_000_000_000.0, // Another large volume
+            },
+        ];
+
+        let result = cmf.calculate(&candles).unwrap();
+
+        // We should get one result
+        assert_eq!(result.len(), 1);
+
+        // The value should still be constrained between -1 and 1
+        assert!(
+            result[0] >= -1.0 && result[0] <= 1.0,
+            "CMF with extreme volumes should still be between -1 and 1, got: {}",
+            result[0]
+        );
     }
 } // Close the test module
