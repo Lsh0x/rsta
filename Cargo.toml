@@ -1,14 +1,10 @@
 [package]
-name = "rsta"
-version = "0.0.1"
+name = "rbase"
+version = "0.2.2"
 authors = ["LSH <github@lsh.tech>"]
 edition = "2021"
-description = "Rust Statistical Technical Analysis (RSTA) - A library for financial technical analysis indicators"
+description = "Github template to setup the CI and cargo publish"
 license = "GPL-3.0"
 
 
 [dependencies]
-ndarray = "0.15"
-thiserror = "1.0"
-num-traits = "0.2"
-statrs = "0.16"
