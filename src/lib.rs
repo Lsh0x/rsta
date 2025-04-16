@@ -8,7 +8,7 @@
 //! - Support for both price and volume-based indicators
 //! - Customizable parameters for each indicator
 //! - Error handling for invalid parameters and insufficient data
-//! - Current version: 0.0.1
+//! - Current version: 0.0.2
 //!
 //! ## Quick Start
 //!

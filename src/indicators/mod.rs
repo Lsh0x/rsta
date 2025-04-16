@@ -100,7 +100,7 @@ pub use self::trend::{ExponentialMovingAverage, SimpleMovingAverage};
 
 // Re-export momentum indicators
 pub use self::momentum::{
-    RelativeStrengthIndex, StochasticOscillator, StochasticResult, WilliamsR,
+    RSI, StochasticOscillator, StochasticResult, WilliamsR,
 };
 
 // Re-export volatility indicators

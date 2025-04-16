@@ -28,7 +28,7 @@ Add RSTA to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rsta = "0.0.1"
+rsta = "0.0.2"
 ```
 
 ## Quick Start
@@ -79,10 +79,10 @@ Available trend indicators:
 Measure the rate of price changes to identify overbought or oversold conditions.
 
 ```rust
-use rsta::indicators::momentum::{RelativeStrengthIndex, Indicator};
+use rsta::indicators::momentum::{RSI, Indicator};
 
 // Create a 14-period RSI
-let mut rsi = RelativeStrengthIndex::new(14)?;
+let mut rsi = RSI::new(14)?;
 let prices = vec![/* your price data */];
 let rsi_values = rsi.calculate(&prices)?;
 
@@ -215,11 +215,11 @@ let candle = Candle {
 Many trading strategies use multiple indicators together:
 
 ```rust
-use rsta::indicators::momentum::{RelativeStrengthIndex, Indicator as MomentumIndicator};
+use rsta::indicators::momentum::{RSI, Indicator as MomentumIndicator};
 use rsta::indicators::volatility::{BollingerBands, Indicator as VolatilityIndicator};
 
 // Create indicators
-let mut rsi = RelativeStrengthIndex::new(14)?;
+let mut rsi = RSI::new(14)?;
 let mut bb = BollingerBands::new(20, 2.0)?;
 
 // Calculate indicators
