@@ -16,7 +16,7 @@ use super::traits::PriceDataAccessor;
 /// Creating and using candle data:
 ///
 /// ```
-/// use rsta::indicators::volatility::AverageTrueRange;
+/// use rsta::indicators::volatility::ATR;
 /// use rsta::indicators::Indicator;
 /// use rsta::indicators::Candle;
 ///
@@ -65,7 +65,7 @@ use super::traits::PriceDataAccessor;
 /// ];
 ///
 /// // Use with an indicator that requires OHLCV data
-/// let mut atr = AverageTrueRange::new(3).unwrap();
+/// let mut atr = ATR::new(3).unwrap();
 /// let atr_values = atr.calculate(&candles).unwrap();
 ///
 /// // The ATR values can be inspected

@@ -1,84 +1,87 @@
-//! # Technical Analysis Indicators
-//!
-//! This module contains a comprehensive collection of technical analysis indicators
-//! used in financial markets, organized by category and with a consistent interface.
-//!
-//! ## Indicator Categories
-//!
-//! The indicators are organized into four main categories:
-//!
-//! - [`trend`]: Trend following indicators like Moving Averages
-//! - [`momentum`]: Momentum indicators like RSI and Stochastic Oscillator
-//! - [`volume`]: Volume-based indicators like OBV and A/D Line
-//! - [`volatility`]: Volatility indicators like ATR and Bollinger Bands
-//!
-//! ## Core Components
-//!
-//! The library is built around these core components:
-//!
-//! - [`Indicator`] trait: Common interface implemented by all indicators
-//! - [`Candle`] struct: Represents OHLCV price data
-//! - [`PriceDataAccessor`] trait: Provides uniform access to price data
-//! - [`IndicatorError`] enum: Standardized error handling
-//!
-//! ## Using Indicators
-//!
-//! All indicators follow a common pattern:
-//!
-//! 1. Create a new indicator instance with specific parameters
-//! 2. Call `calculate()` with historical data to get a vector of values
-//! 3. Or use `next()` for real-time updates with new data points
-//!
-//! ```rust,no_run
-//! use rsta::indicators::Indicator;
-//! use rsta::indicators::trend::SimpleMovingAverage;
-//!
-//! // Create a new indicator instance
-//! let mut sma = SimpleMovingAverage::new(14).unwrap();
-//!
-//! // Historical price data
-//! let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
-//!                   20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0];
-//!
-//! // Batch calculation
-//! let sma_values = sma.calculate(&prices).unwrap();
-//! println!("SMA values: {:?}", sma_values);
-//!
-//! // Or real-time updates
-//! sma.reset(); // Reset the state first
-//! for price in prices {
-//!     if let Some(value) = sma.next(price).unwrap() {
-//!         println!("New SMA value: {}", value);
-//!     }
-//! }
-//! ```
-//!
-//! ## Working with OHLCV Data
-//!
-//! Some indicators require OHLCV (Open, High, Low, Close, Volume) data:
-//!
-//! ```rust,no_run
-//! use rsta::indicators::Indicator;
-//! use rsta::indicators::volatility::AverageTrueRange;
-//! use rsta::indicators::Candle;
-//!
-//! // Create indicator
-//! let mut atr = AverageTrueRange::new(14).unwrap();
-//!
-//! // Create OHLCV data
-//! let candles = vec![
-//!     Candle { timestamp: 1, open: 10.0, high: 12.0, low: 9.0, close: 11.0, volume: 1000.0 },
-//!     Candle { timestamp: 2, open: 11.0, high: 13.0, low: 10.0, close: 12.0, volume: 1200.0 },
-//!     // Additional candles...
-//! ];
-//!
-//! // Calculate ATR values
-//! let atr_values = atr.calculate(&candles).unwrap();
-//! ```
-//!
-//! ## Common Utilities
-//!
-//! The [`utils`] module provides common calculations used across indicators.
+/// # Technical Analysis Indicators
+///
+/// This module contains a comprehensive collection of technical analysis indicators
+/// used in financial markets, organized by category and with a consistent interface.
+///
+/// ## Indicator Categories
+///
+/// The indicators are organized into four main categories:
+///
+/// - [`trend`]: Trend following indicators like Moving Averages
+/// - [`momentum`]: Momentum indicators like RSI and Stochastic Oscillator
+/// - [`volume`]: Volume-based indicators like OBV and A/D Line
+/// - [`volatility`]: Volatility indicators like ATR and Bollinger Bands
+///
+/// ## Core Components
+///
+/// The library is built around these core components:
+///
+/// - [`Indicator`] trait: Common interface implemented by all indicators
+/// - [`Candle`] struct: Represents OHLCV price data
+/// - [`PriceDataAccessor`] trait: Provides uniform access to price data
+/// - [`IndicatorError`] enum: Standardized error handling
+///
+/// ## Using Indicators
+///
+/// All indicators follow a common pattern:
+///
+/// 1. Create a new indicator instance with specific parameters
+/// 2. Call `calculate()` with historical data to get a vector of values
+/// 3. Or use `next()` for real-time updates with new data points
+///
+/// ```rust,no_run
+/// use rsta::indicators::Indicator;
+/// use rsta::indicators::trend::SimpleMovingAverage;
+///
+/// // Create a new indicator instance
+/// let mut sma = SimpleMovingAverage::new(14).unwrap();
+///
+/// // Historical price data
+/// let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
+///                   20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0];
+///
+/// // Batch calculation
+/// let sma_values = sma.calculate(&prices).unwrap();
+/// println!("SMA values: {:?}", sma_values);
+///
+/// // Or real-time updates
+/// sma.reset(); // Reset the state first
+/// for price in prices {
+///     if let Some(value) = sma.next(price).unwrap() {
+///         println!("New SMA value: {}", value);
+///     }
+/// }
+/// ```
+///
+/// ## Working with OHLCV Data
+///
+/// Some indicators require OHLCV (Open, High, Low, Close, Volume) data:
+///
+/// ```rust,no_run
+/// use rsta::indicators::Indicator;
+/// use rsta::indicators::volatility::ATR;
+/// use rsta::indicators::Candle;
+///
+/// // Create indicator
+/// let mut atr = ATR::new(14).unwrap();
+///
+/// // Create OHLCV data
+/// let candles = vec![
+///     Candle { timestamp: 1, open: 10.0, high: 12.0, low: 9.0, close: 11.0, volume: 1000.0 },
+///     Candle { timestamp: 2, open: 11.0, high: 13.0, low: 10.0, close: 12.0, volume: 1200.0 },
+///     // Additional candles...
+/// ];
+///
+/// // Calculate ATR values
+/// let atr_values = atr.calculate(&candles).unwrap();
+/// ```
+///
+/// ## Common Utilities
+///
+/// The [`utils`] module provides common calculations used across indicators.
+
+// Ensure volatility module is accessible
+pub mod volatility;
 
 // Module declarations
 pub mod candle;
@@ -87,7 +90,6 @@ pub mod momentum;
 pub mod traits;
 pub mod trend;
 pub mod utils;
-pub mod volatility;
 pub mod volume;
 
 // Re-export core traits and types
@@ -105,8 +107,7 @@ pub use self::momentum::{
 
 // Re-export volatility indicators
 pub use self::volatility::{
-    AverageTrueRange, BollingerBands, BollingerBandsResult, KeltnerChannels, KeltnerChannelsResult,
-    StandardDeviation,
+    ATR as Atr, BB, bb::BBResult, KeltnerChannels, KeltnerChannelsResult, STD as Std,
 };
 
 // Re-export volume indicators

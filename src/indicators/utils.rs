@@ -112,8 +112,13 @@ pub fn standard_deviation(data: &[f64], mean: Option<f64>) -> Result<f64, Indica
         ));
     }
 
+    if data.len() == 1 {
+        return Ok(0.0);
+    }
+
     let mean = mean.unwrap_or_else(|| data.iter().sum::<f64>() / data.len() as f64);
 
+    // Use n denominator for population standard deviation
     let variance = data.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / data.len() as f64;
 
     Ok(variance.sqrt())
@@ -225,9 +230,10 @@ mod tests {
     fn test_standard_deviation() {
         let data = vec![2.0, 4.0, 6.0, 8.0, 10.0];
 
+        // Population standard deviation calculation
         // Mean = 6.0
-        // Variance = ((2-6)² + (4-6)² + (6-6)² + (8-6)² + (10-6)²) / 5 = (16 + 4 + 0 + 4 + 16) / 5 = 40 / 5 = 8
-        // Standard deviation = √8 ≈ 2.828
+        // Variance = ((2-6)² + (4-6)² + (6-6)² + (8-6)² + (10-6)²) / 5 = (16 + 4 + 0 + 4 + 16) / 5 = 8
+        // Standard deviation = √8 ≈ 2.828427
         let std_dev = standard_deviation(&data, Some(6.0)).unwrap();
         assert!((std_dev - 2.828427).abs() < 0.000001);
 
@@ -238,6 +244,11 @@ mod tests {
         // Error case - empty data
         let result = standard_deviation(&[] as &[f64], None);
         assert!(result.is_err());
+
+        // Single value case
+        let single_data = vec![5.0];
+        let std_dev = standard_deviation(&single_data, None).unwrap();
+        assert_eq!(std_dev, 0.0);
     }
 
     #[test]
