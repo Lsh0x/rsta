@@ -14,24 +14,24 @@ use thiserror::Error;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use rsta::indicators::trend::SimpleMovingAverage;
+/// use rsta::indicators::Sma;
 /// use rsta::indicators::IndicatorError;
 /// use rsta::indicators::Indicator;
 ///
 /// // Handle a parameter validation error
-/// match SimpleMovingAverage::new(0) {
+/// match Sma::new(0) {
 ///     Err(IndicatorError::InvalidParameter(msg)) => println!("Invalid parameter: {}", msg),
 ///     _ => println!("Unexpected result"),
 /// }
 /// ```
 ///
 /// ```rust
-/// use rsta::indicators::trend::SimpleMovingAverage;
+/// use rsta::indicators::Sma;
 /// use rsta::indicators::IndicatorError;
 /// use rsta::indicators::Indicator;
 ///
 /// // Handle an insufficient data error
-/// let mut sma = SimpleMovingAverage::new(14).unwrap();
+/// let mut sma = Sma::new(14).unwrap();
 /// let prices = vec![1.0, 2.0]; // Not enough data
 /// match sma.calculate(&prices) {
 ///     Err(IndicatorError::InsufficientData(msg)) => println!("Not enough data: {}", msg),

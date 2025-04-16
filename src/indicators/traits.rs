@@ -23,11 +23,11 @@ use super::error::IndicatorError;
 /// Basic usage with a simple moving average:
 ///
 /// ```rust,no_run
-/// use rsta::indicators::trend::SimpleMovingAverage;
+/// use rsta::indicators::Sma;
 /// use rsta::indicators::Indicator;
 /// // use of Indicator trait from this module
 /// // Create a 14-period SMA
-/// let mut sma = SimpleMovingAverage::new(14).unwrap();
+/// let mut sma = Sma::new(14).unwrap();
 ///
 /// // Historical price data
 /// let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,

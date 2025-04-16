@@ -31,10 +31,10 @@
 ///
 /// ```rust,no_run
 /// use rsta::indicators::Indicator;
-/// use rsta::indicators::trend::SimpleMovingAverage;
+/// use rsta::indicators::Sma;
 ///
 /// // Create a new indicator instance
-/// let mut sma = SimpleMovingAverage::new(14).unwrap();
+/// let mut sma = Sma::new(14).unwrap();
 ///
 /// // Historical price data
 /// let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
@@ -97,9 +97,6 @@ pub use self::candle::Candle;
 pub use self::error::IndicatorError;
 pub use self::traits::{Indicator, PriceDataAccessor};
 
-// Re-export trend indicators
-pub use self::trend::{ExponentialMovingAverage, SimpleMovingAverage};
-
 // Re-export momentum indicators
 pub use self::momentum::{
     RSI, StochasticOscillator, StochasticResult, WilliamsR,
@@ -108,6 +105,11 @@ pub use self::momentum::{
 // Re-export volatility indicators
 pub use self::volatility::{
     ATR as Atr, BB, bb::BBResult, KeltnerChannels, KeltnerChannelsResult, STD as Std,
+};
+
+// Re-export trend indicators
+pub use self::trend::{
+    EMA as Ema, SMA as Sma
 };
 
 // Re-export volume indicators
@@ -149,8 +151,8 @@ mod tests {
 
     #[test]
     fn test_sma_calculation() {
-        // Test using SimpleMovingAverage with the Indicator trait
-        let mut sma = SimpleMovingAverage::new(3).unwrap();
+        // Test using SMA with the Indicator trait
+        let mut sma = Sma::new(3).unwrap();
 
         // Sample price data
         let prices = vec![2.0, 4.0, 6.0, 8.0, 10.0];
@@ -168,7 +170,7 @@ mod tests {
     #[test]
     fn test_indicator_next_method() {
         // Test using the next method from the Indicator trait
-        let mut sma = SimpleMovingAverage::new(3).unwrap();
+        let mut sma = Sma::new(3).unwrap();
 
         // Add values one by one
         assert_eq!(sma.next(2.0).unwrap(), None); // Not enough data yet
@@ -181,7 +183,7 @@ mod tests {
     #[test]
     fn test_error_handling() {
         // Test error handling using re-exported error type
-        let error_result = SimpleMovingAverage::new(0); // Invalid period
+        let error_result = Sma::new(0); // Invalid period
 
         assert!(error_result.is_err());
         match error_result {

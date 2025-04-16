@@ -15,10 +15,10 @@
 //! ```rust
 //! use rsta::indicators::Indicator;
 //! use rsta::indicators::Candle;
-//! use rsta::indicators::trend::SimpleMovingAverage;
+//! use rsta::indicators::Sma;
 //!
 //! // Create a Simple Moving Average indicator
-//! let mut sma = SimpleMovingAverage::new(5).unwrap();
+//! let mut sma = Sma::new(5).unwrap();
 //!
 //! // Create some price data
 //! let prices = vec![42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0];
