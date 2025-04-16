@@ -1,9 +1,8 @@
 use std::collections::VecDeque;
 
+use crate::indicators::utils::{calculate_sma, standard_deviation, validate_data_length};
+use crate::indicators::{validate_period, Indicator};
 use crate::IndicatorError;
-use crate::indicators::utils::{standard_deviation, calculate_sma, validate_data_length};
-use crate::indicators::{Indicator, validate_period};
-
 
 /// Bollinger Bands indicator result
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -155,7 +154,6 @@ impl Indicator<f64, BBResult> for BB {
         self.sma = None;
     }
 }
-
 
 #[cfg(test)]
 mod tests {

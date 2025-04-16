@@ -1,7 +1,7 @@
-use crate::Indicator;
-use crate::IndicatorError;
 use crate::indicators::utils::calculate_ema;
 use crate::indicators::validate_period;
+use crate::Indicator;
+use crate::IndicatorError;
 
 /// Exponential Moving Average (EMA) indicator
 ///

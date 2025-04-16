@@ -150,8 +150,10 @@ impl Indicator<f64, f64> for RSI {
             // Calculate/update average gain and loss
             if let (Some(avg_gain), Some(avg_loss)) = (self.avg_gain, self.avg_loss) {
                 // Use Wilder's smoothing method for ongoing calculations
-                self.avg_gain = Some((avg_gain * (self.period - 1) as f64 + gain) / self.period as f64);
-                self.avg_loss = Some((avg_loss * (self.period - 1) as f64 + loss) / self.period as f64);
+                self.avg_gain =
+                    Some((avg_gain * (self.period - 1) as f64 + gain) / self.period as f64);
+                self.avg_loss =
+                    Some((avg_loss * (self.period - 1) as f64 + loss) / self.period as f64);
             } else {
                 // Initial average calculation
                 self.avg_gain = Some(self.gains.iter().sum::<f64>() / self.period as f64);
@@ -193,7 +195,6 @@ mod tests {
 
     #[test]
     fn test_rsi_calculation() {
-
         let mut rsi = RSI::new(3).unwrap();
 
         // Sample price data

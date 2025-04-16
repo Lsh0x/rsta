@@ -37,11 +37,3 @@ pub mod indicators;
 pub use indicators::Candle;
 pub use indicators::Indicator;
 pub use indicators::IndicatorError;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 
+use crate::indicators::utils::{calculate_ema, validate_data_length, validate_period};
 use crate::indicators::volatility::ATR;
 use crate::indicators::{Candle, Indicator, IndicatorError};
-use crate::indicators::utils::{calculate_ema, validate_data_length, validate_period};
 
 /// Keltner Channels indicator
 ///
@@ -92,10 +92,8 @@ use crate::indicators::utils::{calculate_ema, validate_data_length, validate_per
 ///     }
 /// }
 /// ```
-/// 
-/// 
-
-/// Keltner Channels indicator result
+/// Keltner Channels indicator result containing the middle band (EMA),
+/// upper band (EMA + ATR multiplier), and lower band (EMA - ATR multiplier)
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct KeltnerChannelsResult {
     /// Middle band (usually EMA)
@@ -107,7 +105,6 @@ pub struct KeltnerChannelsResult {
     /// Width of the channels ((upper - lower) / middle)
     pub bandwidth: f64,
 }
-
 
 #[derive(Debug)]
 pub struct KeltnerChannels {
@@ -263,7 +260,6 @@ impl Indicator<Candle, KeltnerChannelsResult> for KeltnerChannels {
         self.current_atr = None;
     }
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -79,7 +79,6 @@
 /// ## Common Utilities
 ///
 /// The [`utils`] module provides common calculations used across indicators.
-
 // Ensure volatility module is accessible
 pub mod volatility;
 
@@ -98,19 +97,15 @@ pub use self::error::IndicatorError;
 pub use self::traits::{Indicator, PriceDataAccessor};
 
 // Re-export momentum indicators
-pub use self::momentum::{
-    RSI, StochasticOscillator, StochasticResult, WilliamsR,
-};
+pub use self::momentum::{StochasticOscillator, StochasticResult, WilliamsR, RSI};
 
 // Re-export volatility indicators
 pub use self::volatility::{
-    ATR as Atr, BB, bb::BBResult, KeltnerChannels, KeltnerChannelsResult, STD as Std,
+    bb::BBResult, KeltnerChannels, KeltnerChannelsResult, ATR as Atr, BB, STD as Std,
 };
 
 // Re-export trend indicators
-pub use self::trend::{
-    EMA as Ema, SMA as Sma
-};
+pub use self::trend::{EMA as Ema, SMA as Sma};
 
 // Re-export volume indicators
 pub use self::volume::{

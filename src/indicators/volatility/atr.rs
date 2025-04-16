@@ -1,7 +1,7 @@
+use crate::indicators::traits::Indicator;
 use crate::indicators::utils::validate_data_length;
 use crate::indicators::utils::validate_period;
 use crate::indicators::{Candle, IndicatorError};
-use crate::indicators::traits::Indicator;
 use std::collections::VecDeque;
 
 /// Average True Range (ATR) indicator
@@ -86,14 +86,14 @@ impl ATR {
     /// * `f64` - The True Range value
     fn true_range(candle: &Candle, prev_close: Option<f64>) -> f64 {
         let high_low = candle.high - candle.low;
-        
+
         match prev_close {
             Some(prev_close) => {
                 let high_close = (candle.high - prev_close).abs();
                 let low_close = (candle.low - prev_close).abs();
                 high_low.max(high_close).max(low_close)
             }
-            None => high_low
+            None => high_low,
         }
     }
 
@@ -172,7 +172,7 @@ impl Indicator<Candle, f64> for ATR {
         if self.tr_values.len() == self.period {
             let atr = match self.current_atr {
                 Some(prev_atr) => self.smooth_atr(prev_atr, tr),
-                None => Self::initial_atr(&self.tr_values.make_contiguous()),
+                None => Self::initial_atr(self.tr_values.make_contiguous()),
             };
             self.current_atr = Some(atr);
             Ok(Some(atr))
@@ -191,11 +191,16 @@ impl Indicator<Candle, f64> for ATR {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     const FLOAT_EPSILON: f64 = 1e-10;
 
     fn assert_float_eq(a: f64, b: f64) {
-        assert!((a - b).abs() < FLOAT_EPSILON, "Expected {} but got {}", b, a);
+        assert!(
+            (a - b).abs() < FLOAT_EPSILON,
+            "Expected {} but got {}",
+            b,
+            a
+        );
     }
 
     fn create_test_candle(timestamp: u64, open: f64, high: f64, low: f64, close: f64) -> Candle {
@@ -236,10 +241,10 @@ mod tests {
     fn test_atr_calculation_basic() {
         let mut atr = ATR::new(3).unwrap();
         let candles = vec![
-            create_test_candle(0, 10.0, 12.0, 9.0, 11.0),   // TR = 3
-            create_test_candle(1, 11.0, 14.0, 10.0, 13.0),  // TR = 4
-            create_test_candle(2, 13.0, 15.0, 11.0, 14.0),  // TR = 4
-            create_test_candle(3, 14.0, 16.0, 12.0, 15.0),  // TR = 4
+            create_test_candle(0, 10.0, 12.0, 9.0, 11.0),  // TR = 3
+            create_test_candle(1, 11.0, 14.0, 10.0, 13.0), // TR = 4
+            create_test_candle(2, 13.0, 15.0, 11.0, 14.0), // TR = 4
+            create_test_candle(3, 14.0, 16.0, 12.0, 15.0), // TR = 4
         ];
 
         let result = atr.calculate(&candles).unwrap();
@@ -256,10 +261,10 @@ mod tests {
     fn test_atr_with_gaps() {
         let mut atr = ATR::new(3).unwrap();
         let candles = vec![
-            create_test_candle(0, 10.0, 12.0, 9.0, 11.0),    // TR = 3
-            create_test_candle(1, 11.0, 14.0, 10.0, 13.0),   // TR = 4
-            create_test_candle(2, 15.0, 17.0, 14.0, 16.0),   // TR = 4 (gap up)
-            create_test_candle(3, 12.0, 13.0, 11.0, 12.0),   // TR = 5 (gap down)
+            create_test_candle(0, 10.0, 12.0, 9.0, 11.0),  // TR = 3
+            create_test_candle(1, 11.0, 14.0, 10.0, 13.0), // TR = 4
+            create_test_candle(2, 15.0, 17.0, 14.0, 16.0), // TR = 4 (gap up)
+            create_test_candle(3, 12.0, 13.0, 11.0, 12.0), // TR = 5 (gap down)
         ];
 
         let result = atr.calculate(&candles).unwrap();
@@ -274,22 +279,36 @@ mod tests {
         let mut atr = ATR::new(3).unwrap();
 
         // First two values should return None
-        assert_eq!(atr.next(create_test_candle(0, 10.0, 12.0, 9.0, 11.0)).unwrap(), None);
-        assert_eq!(atr.next(create_test_candle(1, 11.0, 14.0, 10.0, 13.0)).unwrap(), None);
+        assert_eq!(
+            atr.next(create_test_candle(0, 10.0, 12.0, 9.0, 11.0))
+                .unwrap(),
+            None
+        );
+        assert_eq!(
+            atr.next(create_test_candle(1, 11.0, 14.0, 10.0, 13.0))
+                .unwrap(),
+            None
+        );
 
         // Third value should give us our first ATR
-        let result = atr.next(create_test_candle(2, 13.0, 15.0, 11.0, 14.0)).unwrap().unwrap();
+        let result = atr
+            .next(create_test_candle(2, 13.0, 15.0, 11.0, 14.0))
+            .unwrap()
+            .unwrap();
         assert_float_eq(result, 3.666666666666667);
 
         // Fourth value should use Wilder's smoothing
-        let result = atr.next(create_test_candle(3, 14.0, 16.0, 12.0, 15.0)).unwrap().unwrap();
+        let result = atr
+            .next(create_test_candle(3, 14.0, 16.0, 12.0, 15.0))
+            .unwrap()
+            .unwrap();
         assert_float_eq(result, 3.777777777777778);
     }
 
     #[test]
     fn test_atr_error_handling() {
         let mut atr = ATR::new(5).unwrap();
-        
+
         // Test with insufficient data
         let data = vec![
             create_test_candle(0, 10.0, 12.0, 9.0, 11.0),
@@ -313,16 +332,23 @@ mod tests {
     #[test]
     fn test_atr_reset() {
         let mut atr = ATR::new(3).unwrap();
-        
+
         // Add some values
-        atr.next(create_test_candle(0, 10.0, 12.0, 9.0, 11.0)).unwrap();
-        atr.next(create_test_candle(1, 11.0, 14.0, 10.0, 13.0)).unwrap();
-        atr.next(create_test_candle(2, 13.0, 15.0, 11.0, 14.0)).unwrap();
-        
+        atr.next(create_test_candle(0, 10.0, 12.0, 9.0, 11.0))
+            .unwrap();
+        atr.next(create_test_candle(1, 11.0, 14.0, 10.0, 13.0))
+            .unwrap();
+        atr.next(create_test_candle(2, 13.0, 15.0, 11.0, 14.0))
+            .unwrap();
+
         // Reset the indicator
         atr.reset();
-        
+
         // Next value after reset should return None
-        assert_eq!(atr.next(create_test_candle(3, 14.0, 16.0, 12.0, 15.0)).unwrap(), None);
+        assert_eq!(
+            atr.next(create_test_candle(3, 14.0, 16.0, 12.0, 15.0))
+                .unwrap(),
+            None
+        );
     }
 }

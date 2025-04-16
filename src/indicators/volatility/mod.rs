@@ -4,10 +4,10 @@
 
 pub mod atr;
 pub mod bb;
-pub mod std;
 pub mod keltner_channels;
+pub mod std;
 
 pub use self::atr::ATR;
 pub use self::bb::BB;
-pub use self::std::STD;
 pub use self::keltner_channels::{KeltnerChannels, KeltnerChannelsResult};
+pub use self::std::STD;

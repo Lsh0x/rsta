@@ -1,7 +1,6 @@
-
-use crate::indicators::utils::{validate_data_length, validate_period, standard_deviation};
-use crate::indicators::IndicatorError;
 use crate::indicators::traits::Indicator;
+use crate::indicators::utils::{standard_deviation, validate_data_length, validate_period};
+use crate::indicators::IndicatorError;
 use std::collections::VecDeque;
 
 /// Standard Deviation (STD) indicator
@@ -20,7 +19,7 @@ use std::collections::VecDeque;
 /// The standard deviation is calculated as:
 /// ```text
 /// STD = √(Σ(x - μ)² / n)
-/// 
+///
 /// where:
 /// x = each value in the dataset
 /// μ = mean of the dataset
@@ -66,7 +65,6 @@ impl STD {
             values: VecDeque::with_capacity(period),
         })
     }
-
 }
 
 impl Indicator<f64, f64> for STD {
@@ -102,7 +100,7 @@ impl Indicator<f64, f64> for STD {
         }
 
         if self.values.len() == self.period {
-            standard_deviation(&self.values.make_contiguous(), None).map(Some)
+            standard_deviation(self.values.make_contiguous(), None).map(Some)
         } else {
             Ok(None)
         }
@@ -115,40 +113,40 @@ impl Indicator<f64, f64> for STD {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     const FLOAT_EPSILON: f64 = 1e-10;
 
     // Helper function to compare floating point values
-#[test]
-fn test_std_calculation_basic() {
-    let mut std = STD::new(3).unwrap();
-    let data = vec![2.0, 4.0, 6.0];
-    
-    let result = std.calculate(&data).unwrap();
-    assert_eq!(result.len(), 1);
-    
-    // Mean = (2 + 4 + 6) / 3 = 4
-    // Variance = ((2-4)² + (4-4)² + (6-4)²) / 3 = (4 + 0 + 4) / 3 = 8/3
-    // STD = √(8/3) ≈ 1.632993161855452
-    assert_float_eq(result[0], 1.632993161855452);
-}
+    #[test]
+    fn test_std_calculation_basic() {
+        let mut std = STD::new(3).unwrap();
+        let data = vec![2.0, 4.0, 6.0];
 
-#[test]
-fn test_std_calculation_multiple_periods() {
-    let mut std = STD::new(2).unwrap();
-    let data = vec![1.0, 2.0, 3.0];
-    
-    let result = std.calculate(&data).unwrap();
-    assert_eq!(result.len(), 2);
-    
-    // First window [1.0, 2.0]: Mean = 1.5, Variance = ((1-1.5)² + (2-1.5)²) / 2 = 0.25
-    // STD = √0.25 = 0.5
-    assert_float_eq(result[0], 0.5);
-    
-    // Second window [2.0, 3.0]: Mean = 2.5, Variance = ((2-2.5)² + (3-2.5)²) / 2 = 0.25
-    // STD = √0.25 = 0.5
-    assert_float_eq(result[1], 0.5);
-}
+        let result = std.calculate(&data).unwrap();
+        assert_eq!(result.len(), 1);
+
+        // Mean = (2 + 4 + 6) / 3 = 4
+        // Variance = ((2-4)² + (4-4)² + (6-4)²) / 3 = (4 + 0 + 4) / 3 = 8/3
+        // STD = √(8/3) ≈ 1.632993161855452
+        assert_float_eq(result[0], 1.632993161855452);
+    }
+
+    #[test]
+    fn test_std_calculation_multiple_periods() {
+        let mut std = STD::new(2).unwrap();
+        let data = vec![1.0, 2.0, 3.0];
+
+        let result = std.calculate(&data).unwrap();
+        assert_eq!(result.len(), 2);
+
+        // First window [1.0, 2.0]: Mean = 1.5, Variance = ((1-1.5)² + (2-1.5)²) / 2 = 0.25
+        // STD = √0.25 = 0.5
+        assert_float_eq(result[0], 0.5);
+
+        // Second window [2.0, 3.0]: Mean = 2.5, Variance = ((2-2.5)² + (3-2.5)²) / 2 = 0.25
+        // STD = √0.25 = 0.5
+        assert_float_eq(result[1], 0.5);
+    }
 
     // Helper function to compare floating point values
     fn assert_float_eq(a: f64, b: f64) {
@@ -158,7 +156,7 @@ fn test_std_calculation_multiple_periods() {
     fn test_std_with_decimal_values() {
         let mut std = STD::new(4).unwrap();
         let data = vec![1.5, 2.5, 3.5, 4.5];
-        
+
         let result = std.calculate(&data).unwrap();
         assert_eq!(result.len(), 1);
         // Mean = 3.0
@@ -171,7 +169,7 @@ fn test_std_calculation_multiple_periods() {
         // Test period of 1
         let mut std = STD::new(1).unwrap();
         let data = vec![2.0, 4.0, 6.0, 8.0, 10.0];
-        
+
         let result = std.calculate(&data).unwrap();
         assert_eq!(result.len(), 5);
         // For period=1, all standard deviations should be 0
@@ -182,7 +180,7 @@ fn test_std_calculation_multiple_periods() {
         // Test with constant values
         let mut std = STD::new(3).unwrap();
         let data = vec![5.0, 5.0, 5.0, 5.0, 5.0];
-        
+
         let result = std.calculate(&data).unwrap();
         assert_eq!(result.len(), 3);
         // STD should be 0 for constant values
@@ -216,13 +214,13 @@ fn test_std_calculation_multiple_periods() {
         let mut std = STD::new(5).unwrap();
         // Simulated market pattern: trending up with increasing volatility
         let data = vec![
-            100.0, 101.0, 101.5, 102.0, 103.0,  // low volatility trend
-            105.0, 104.0, 106.0, 103.0, 107.0,  // increasing volatility
+            100.0, 101.0, 101.5, 102.0, 103.0, // low volatility trend
+            105.0, 104.0, 106.0, 103.0, 107.0, // increasing volatility
         ];
-        
+
         let result = std.calculate(&data).unwrap();
         assert_eq!(result.len(), 6);
-        
+
         // The standard deviation should increase as volatility increases
         assert!(result[0] < result[result.len() - 1]);
     }
@@ -230,7 +228,7 @@ fn test_std_calculation_multiple_periods() {
     #[test]
     fn test_std_error_handling() {
         let mut std = STD::new(5).unwrap();
-        
+
         // Test with insufficient data
         let data = vec![1.0, 2.0, 3.0];
         assert!(matches!(
@@ -244,22 +242,22 @@ fn test_std_calculation_multiple_periods() {
             std.calculate(&data),
             Err(IndicatorError::InsufficientData(_))
         ));
-        
+
         // Test valid period initialization
         assert!(STD::new(100).is_ok());
     }
     #[test]
     fn test_std_reset() {
         let mut std = STD::new(3).unwrap();
-        
+
         // Add some values
         std.next(1.0).unwrap();
         std.next(2.0).unwrap();
         std.next(3.0).unwrap();
-        
+
         // Reset the indicator
         std.reset();
-        
+
         // Next value after reset should return None
         assert_eq!(std.next(4.0).unwrap(), None);
     }

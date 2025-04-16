@@ -1,5 +1,5 @@
 //! Momentum indicators
-//! 
+//!
 //! This module contains indicators that measure the rate of change or momentum of price movements.
 //! These include the Relative Strength Index (RSI), Stochastic Oscillator, and Williams %R.
 //!

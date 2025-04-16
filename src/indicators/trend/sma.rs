@@ -1,4 +1,4 @@
-use crate::indicators::utils::{calculate_ema, calculate_sma, validate_period};
+use crate::indicators::utils::{calculate_sma, validate_period};
 use crate::indicators::{Indicator, IndicatorError};
 use std::collections::VecDeque;
 
@@ -75,9 +75,10 @@ impl Indicator<f64, f64> for SMA {
     }
 }
 
+#[cfg(test)]
 mod tests {
-    use super::*;
-
+    use super::SMA;
+    use crate::indicators::Indicator;
     #[test]
     fn test_sma_new() {
         // Valid period should work
