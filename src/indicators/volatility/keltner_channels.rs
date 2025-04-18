@@ -539,7 +539,7 @@ mod tests {
         println!("Result length: {}", result.len());
 
         // Check that we get enough results
-        assert!(result.len() > 0);
+        assert!(!result.is_empty());
 
         // For flat prices, all EMA values should be 10.0
         for val in result.iter() {

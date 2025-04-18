@@ -49,7 +49,7 @@ Key components:
   - **Trend Indicators**:
     - Simple Moving Average (SMA)
     - Exponential Moving Average (EMA)
-
+    - Moving Average Convergence Divergence (MACD)
   - **Momentum Indicators**:
     - Relative Strength Index (RSI)
     - Stochastic Oscillator
@@ -111,6 +111,7 @@ let sma_values = sma.calculate(&prices)?;
 Available trend indicators:
 - Simple Moving Average (SMA)
 - Exponential Moving Average (EMA)
+- Moving Average Convergence Divergence (MACD)
 
 ### Momentum Indicators
 

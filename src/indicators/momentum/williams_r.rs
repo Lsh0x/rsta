@@ -253,7 +253,7 @@ mod tests {
         let result3 = williams_r.next(candle3).unwrap();
         assert!(result3.is_some());
         let r_value3 = result3.unwrap();
-        assert!(r_value3 <= 0.0 && r_value3 >= -100.0);
+        assert!((-100.0..=0.0).contains(&r_value3));
 
         // Fourth candle should return a value and maintain sliding window
         let candle4 = Candle {
@@ -267,7 +267,7 @@ mod tests {
         let result4 = williams_r.next(candle4).unwrap();
         assert!(result4.is_some());
         let r_value4 = result4.unwrap();
-        assert!(r_value4 <= 0.0 && r_value4 >= -100.0);
+        assert!((-100.0..=0.0).contains(&r_value4));
 
         // Verify reset clears history
         williams_r.reset();
