@@ -28,22 +28,59 @@ Add RSTA to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rsta = "0.0.1"
+rsta = "0.0.2"
 ```
+
+## API Reference
+
+For complete API documentation, please visit [docs.rs/rsta](https://docs.rs/rsta).
+
+Key components:
+
+- **Core Traits**:
+  - `Indicator<T, O>`: Common interface for all indicators
+  - `PriceDataAccessor<T>`: Uniform access to price data
+
+- **Data Types**:
+  - `Candle`: OHLCV price data structure
+  - `IndicatorError`: Error types for indicator operations
+
+- **Indicator Categories**:
+  - **Trend Indicators**:
+    - Simple Moving Average (SMA)
+    - Exponential Moving Average (EMA)
+
+  - **Momentum Indicators**:
+    - Relative Strength Index (RSI)
+    - Stochastic Oscillator
+    - Williams %R
+
+  - **Volume Indicators**:
+    - On Balance Volume (OBV)
+    - Chaikin Money Flow (CMF)
+    - Accumulation/Distribution Line (ADL)
+    - Volume Rate of Change (VROC)
+
+  - **Volatility Indicators**:
+    - Standard Deviation (STD)
+    - Average True Range (ATR)
+    - Bollinger Bands (BB)
+    - Keltner Channels
 
 ## Quick Start
 
 Here's a simple example calculating a Simple Moving Average (SMA):
 
 ```rust
-use rsta::indicators::trend::{SimpleMovingAverage, Indicator};
+use rsta::indicators::trend::Sma;
+use rsta::indicators::Indicator;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Price data
     let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0];
 
     // Create a 5-period SMA
-    let mut sma = SimpleMovingAverage::new(5)?;
+    let mut sma = Sma::new(5)?;
 
     // Calculate SMA values
     let sma_values = sma.calculate(&prices)?;
@@ -62,12 +99,13 @@ RSTA organizes indicators into four main categories:
 Track the direction of price movements over time.
 
 ```rust
-use rsta::indicators::trend::{ExponentialMovingAverage, Indicator};
+use rsta::indicators::trend::Sma;
+use rsta::indicators::Indicator;
 
-// Create a 14-period EMA
-let mut ema = ExponentialMovingAverage::new(14)?;
+// Create a 14-period SMA
+let mut sma = Sma::new(14)?;
 let prices = vec![/* your price data */];
-let ema_values = ema.calculate(&prices)?;
+let sma_values = sma.calculate(&prices)?;
 ```
 
 Available trend indicators:
@@ -79,37 +117,28 @@ Available trend indicators:
 Measure the rate of price changes to identify overbought or oversold conditions.
 
 ```rust
-use rsta::indicators::momentum::{RelativeStrengthIndex, Indicator};
+use rsta::indicators::momentum::Rsi;
+use rsta::indicators::Indicator;
 
 // Create a 14-period RSI
-let mut rsi = RelativeStrengthIndex::new(14)?;
+let mut rsi = Rsi::new(14)?;
 let prices = vec![/* your price data */];
 let rsi_values = rsi.calculate(&prices)?;
-
-// Identify overbought/oversold conditions
-for value in rsi_values {
-    if value > 70.0 {
-        println!("Overbought: {}", value);
-    } else if value < 30.0 {
-        println!("Oversold: {}", value);
-    }
-}
 ```
 
 Available momentum indicators:
 - Relative Strength Index (RSI)
-- Stochastic Oscillator
 - Williams %R
+- Stochastic Oscillator
 
 ### Volume Indicators
 
 Analyze trading volume to confirm price movements.
 
 ```rust
-use rsta::indicators::{Candle, volume::{OnBalanceVolume, Indicator}};
-
-// Create an OBV indicator
-let mut obv = OnBalanceVolume::new();
+use rsta::indicators::volume::Obv;
+use rsta::indicators::Indicator;
+use rsta::indicators::Candle;
 
 // Create price data with OHLCV values
 let candles = vec![
@@ -124,46 +153,45 @@ let candles = vec![
     // More candles...
 ];
 
-// Calculate OBV values
+// Create and calculate OBV
+let mut obv = Obv::new()?;
 let obv_values = obv.calculate(&candles)?;
 ```
 
 Available volume indicators:
 - On Balance Volume (OBV)
-- Volume Rate of Change
-- Accumulation/Distribution Line
-- Chaikin Money Flow
+- Chaikin Money Flow (CMF)
+- Accumulation/Distribution Line (ADL)
+- Volume Rate of Change (VROC)
 
 ### Volatility Indicators
 
 Measure market volatility and price dispersion.
 
 ```rust
-use rsta::indicators::volatility::{BollingerBands, Indicator};
+use rsta::indicators::volatility::Std;
+use rsta::indicators::Indicator;
 
-// Create Bollinger Bands with 20-period SMA and 2 standard deviations
-let mut bb = BollingerBands::new(20, 2.0)?;
+// Create a 20-period Standard Deviation indicator
+let mut std_dev = Std::new(20)?;
 let prices = vec![/* your price data */];
-let bb_values = bb.calculate(&prices)?;
+let std_values = std_dev.calculate(&prices)?;
 
-// Access the bands
-for band in bb_values {
-    println!("Middle: {}, Upper: {}, Lower: {}", 
-             band.middle, band.upper, band.lower);
-             
-    // Check if price is outside the bands
-    if prices[prices.len() - 1] > band.upper {
-        println!("Price above upper band!");
-    } else if prices[prices.len() - 1] < band.lower {
-        println!("Price below lower band!");
+// Standard Deviation values
+for value in std_values {
+    println!("Standard Deviation: {}", value);
+    
+    // Check if volatility is high
+    if value > 2.0 {
+        println!("High volatility detected!");
     }
 }
 ```
 
 Available volatility indicators:
+- Standard Deviation (STD)
 - Average True Range (ATR)
-- Standard Deviation
-- Bollinger Bands
+- Bollinger Bands (BB)
 - Keltner Channels
 
 ## Usage Patterns and Best Practices
@@ -173,10 +201,11 @@ Available volatility indicators:
 RSTA supports both batch calculation for historical data and real-time updates:
 
 ```rust
-use rsta::indicators::trend::{SimpleMovingAverage, Indicator};
+use rsta::indicators::trend::Sma;
+use rsta::indicators::Indicator;
 
 // Create indicator
-let mut sma = SimpleMovingAverage::new(14)?;
+let mut sma = Sma::new(14)?;
 
 // Batch calculation
 let historical_prices = vec![/* historical data */];
@@ -212,33 +241,33 @@ let candle = Candle {
 
 ### Combining Indicators for Trading Strategies
 
-Many trading strategies use multiple indicators together:
+Many trading strategies use multiple indicators together. Once more indicators are implemented, 
+you can combine them for complex trading strategies.
 
 ```rust
-use rsta::indicators::momentum::{RelativeStrengthIndex, Indicator as MomentumIndicator};
-use rsta::indicators::volatility::{BollingerBands, Indicator as VolatilityIndicator};
+use rsta::indicators::trend::Sma;
+use rsta::indicators::volatility::Std;
+use rsta::indicators::Indicator;
 
 // Create indicators
-let mut rsi = RelativeStrengthIndex::new(14)?;
-let mut bb = BollingerBands::new(20, 2.0)?;
+let mut sma = Sma::new(20)?;
+let mut std_dev = Std::new(20)?;
 
 // Calculate indicators
 let prices = vec![/* price data */];
-let rsi_values = rsi.calculate(&prices)?;
-let bb_values = bb.calculate(&prices)?;
+let sma_values = sma.calculate(&prices)?;
+let std_values = std_dev.calculate(&prices)?;
 
-// Find potential signals
-for i in 0..rsi_values.len().min(bb_values.len()) {
-    let price_idx = prices.len() - rsi_values.len() + i;
+// Analyze results (simple example)
+for i in 0..sma_values.len().min(std_values.len()) {
+    let price_idx = prices.len() - sma_values.len() + i;
+    let current_price = prices[price_idx];
     
-    // Potential buy signal: RSI oversold + price below lower band
-    if rsi_values[i] < 30.0 && prices[price_idx] < bb_values[i].lower {
-        println!("Potential buy signal at index {}", price_idx);
-    }
-    
-    // Potential sell signal: RSI overbought + price above upper band
-    if rsi_values[i] > 70.0 && prices[price_idx] > bb_values[i].upper {
-        println!("Potential sell signal at index {}", price_idx);
+    // Simple volatility-based strategy
+    if current_price > sma_values[i] && std_values[i] < 1.0 {
+        println!("Low volatility uptrend at index {}", price_idx);
+    } else if current_price < sma_values[i] && std_values[i] > 2.0 {
+        println!("High volatility downtrend at index {}", price_idx);
     }
 }
 ```
@@ -248,11 +277,11 @@ for i in 0..rsi_values.len().min(bb_values.len()) {
 All methods that might fail return a `Result` with detailed error information:
 
 ```rust
-use rsta::indicators::trend::{SimpleMovingAverage, Indicator};
+use rsta::indicators::trend::Sma;
 use rsta::indicators::IndicatorError;
 
 // Handle errors explicitly
-match SimpleMovingAverage::new(0) {
+match Sma::new(0) {
     Ok(sma) => {
         // Use the SMA
     },
@@ -264,26 +293,6 @@ match SimpleMovingAverage::new(0) {
     }
 }
 ```
-
-## API Reference
-
-For complete API documentation, please visit [docs.rs/rsta](https://docs.rs/rsta).
-
-Key components:
-
-- **Core Traits**:
-  - `Indicator<T, O>`: Common interface for all indicators
-  - `PriceDataAccessor<T>`: Uniform access to price data
-
-- **Data Types**:
-  - `Candle`: OHLCV price data structure
-  - `IndicatorError`: Error types for indicator operations
-
-- **Indicator Categories**:
-  - `trend`: Moving averages and trend-following indicators
-  - `momentum`: Oscillators and momentum indicators
-  - `volume`: Volume-based indicators
-  - `volatility`: Volatility and dispersion measures
 
 ## Contributing
 
