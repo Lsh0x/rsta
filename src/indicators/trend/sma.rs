@@ -7,11 +7,11 @@ use std::collections::VecDeque;
 /// # Example
 ///
 /// ```
-/// use rsta::indicators::trend::SMA;
+/// use rsta::indicators::trend::Sma;
 /// use rsta::indicators::Indicator;
 ///
 /// // Create a 5-period SMA
-/// let mut sma = SMA::new(5).unwrap();
+/// let mut sma = Sma::new(5).unwrap();
 ///
 /// // Price data
 /// let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0];
@@ -22,13 +22,13 @@ use std::collections::VecDeque;
 /// assert_eq!(sma_values[0], 12.0);
 /// ```
 #[derive(Debug)]
-pub struct SMA {
+pub struct Sma {
     period: usize,
     buffer: VecDeque<f64>,
     sum: f64,
 }
 
-impl SMA {
+impl Sma {
     /// Create a new SMA indicator
     ///
     /// # Arguments
@@ -47,7 +47,7 @@ impl SMA {
     }
 }
 
-impl Indicator<f64, f64> for SMA {
+impl Indicator<f64, f64> for Sma {
     fn calculate(&mut self, data: &[f64]) -> Result<Vec<f64>, IndicatorError> {
         calculate_sma(data, self.period)
     }
@@ -77,20 +77,20 @@ impl Indicator<f64, f64> for SMA {
 
 #[cfg(test)]
 mod tests {
-    use super::SMA;
+    use super::Sma;
     use crate::indicators::Indicator;
     #[test]
     fn test_sma_new() {
         // Valid period should work
-        assert!(SMA::new(14).is_ok());
+        assert!(Sma::new(14).is_ok());
 
         // Invalid period should fail
-        assert!(SMA::new(0).is_err());
+        assert!(Sma::new(0).is_err());
     }
 
     #[test]
     fn test_sma_calculation() {
-        let mut sma = SMA::new(3).unwrap();
+        let mut sma = Sma::new(3).unwrap();
         let data = vec![2.0, 4.0, 6.0, 8.0, 10.0];
 
         let result = sma.calculate(&data).unwrap();
@@ -102,7 +102,7 @@ mod tests {
 
     #[test]
     fn test_sma_next() {
-        let mut sma = SMA::new(3).unwrap();
+        let mut sma = Sma::new(3).unwrap();
 
         // Initial values - not enough data yet
         assert_eq!(sma.next(2.0).unwrap(), None);
@@ -118,7 +118,7 @@ mod tests {
 
     #[test]
     fn test_sma_reset() {
-        let mut sma = SMA::new(3).unwrap();
+        let mut sma = Sma::new(3).unwrap();
 
         // Add some values
         sma.next(2.0).unwrap();

@@ -4,7 +4,7 @@ use crate::indicators::utils::validate_period;
 use crate::indicators::{Candle, IndicatorError};
 use std::collections::VecDeque;
 
-/// Average True Range (ATR) indicator
+/// Average True Range (Atr) indicator
 ///
 /// Measures market volatility by decomposing the entire range of an asset price for a period.
 /// The ATR is particularly useful for:
@@ -32,12 +32,12 @@ use std::collections::VecDeque;
 /// # Example
 ///
 /// ```rust,no_run
-/// use rsta::indicators::volatility::ATR;
+/// use rsta::indicators::volatility::Atr;
 /// use rsta::indicators::Indicator;
 /// use rsta::Candle;
 ///
 /// // Create a 14-period ATR
-/// let mut atr = ATR::new(14).unwrap();
+/// let mut atr = Atr::new(14).unwrap();
 ///
 /// // Example candle data
 /// let candles = vec![
@@ -50,14 +50,14 @@ use std::collections::VecDeque;
 /// let atr_values = atr.calculate(&candles).unwrap();
 /// ```
 #[derive(Debug)]
-pub struct ATR {
+pub struct Atr {
     period: usize,
     prev_close: Option<f64>,
     current_atr: Option<f64>,
     tr_values: VecDeque<f64>,
 }
 
-impl ATR {
+impl Atr {
     /// Create a new ATR indicator
     ///
     /// # Arguments
@@ -121,7 +121,7 @@ impl ATR {
     }
 }
 
-impl Indicator<Candle, f64> for ATR {
+impl Indicator<Candle, f64> for Atr {
     fn calculate(&mut self, data: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
         validate_data_length(data, self.period)?;
 
@@ -216,30 +216,30 @@ mod tests {
 
     #[test]
     fn test_atr_new() {
-        assert!(ATR::new(1).is_ok());
-        assert!(ATR::new(14).is_ok());
-        assert!(ATR::new(100).is_ok());
-        assert!(ATR::new(0).is_err());
+        assert!(Atr::new(1).is_ok());
+        assert!(Atr::new(14).is_ok());
+        assert!(Atr::new(100).is_ok());
+        assert!(Atr::new(0).is_err());
     }
 
     #[test]
     fn test_true_range_calculation() {
         // Test case 1: Simple high-low range
         let candle1 = create_test_candle(0, 10.0, 15.0, 8.0, 12.0);
-        assert_float_eq(ATR::true_range(&candle1, None), 7.0); // high - low = 15 - 8 = 7
+        assert_float_eq(Atr::true_range(&candle1, None), 7.0); // high - low = 15 - 8 = 7
 
         // Test case 2: Previous close creates larger range
         let candle2 = create_test_candle(1, 11.0, 13.0, 9.0, 10.0);
-        assert_float_eq(ATR::true_range(&candle2, Some(12.0)), 4.0); // max(4, 3, 1)
+        assert_float_eq(Atr::true_range(&candle2, Some(12.0)), 4.0); // max(4, 3, 1)
 
         // Test case 3: Gap down scenario
         let candle3 = create_test_candle(2, 8.0, 9.0, 7.0, 8.0);
-        assert_float_eq(ATR::true_range(&candle3, Some(10.0)), 3.0); // max(2, 1, 3)
+        assert_float_eq(Atr::true_range(&candle3, Some(10.0)), 3.0); // max(2, 1, 3)
     }
 
     #[test]
     fn test_atr_calculation_basic() {
-        let mut atr = ATR::new(3).unwrap();
+        let mut atr = Atr::new(3).unwrap();
         let candles = vec![
             create_test_candle(0, 10.0, 12.0, 9.0, 11.0),  // TR = 3
             create_test_candle(1, 11.0, 14.0, 10.0, 13.0), // TR = 4
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn test_atr_with_gaps() {
-        let mut atr = ATR::new(3).unwrap();
+        let mut atr = Atr::new(3).unwrap();
         let candles = vec![
             create_test_candle(0, 10.0, 12.0, 9.0, 11.0),  // TR = 3
             create_test_candle(1, 11.0, 14.0, 10.0, 13.0), // TR = 4
@@ -276,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_atr_next_value() {
-        let mut atr = ATR::new(3).unwrap();
+        let mut atr = Atr::new(3).unwrap();
 
         // First two values should return None
         assert_eq!(
@@ -307,7 +307,7 @@ mod tests {
 
     #[test]
     fn test_atr_error_handling() {
-        let mut atr = ATR::new(5).unwrap();
+        let mut atr = Atr::new(5).unwrap();
 
         // Test with insufficient data
         let data = vec![
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn test_atr_reset() {
-        let mut atr = ATR::new(3).unwrap();
+        let mut atr = Atr::new(3).unwrap();
 
         // Add some values
         atr.next(create_test_candle(0, 10.0, 12.0, 9.0, 11.0))

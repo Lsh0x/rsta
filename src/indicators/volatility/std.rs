@@ -3,7 +3,7 @@ use crate::indicators::utils::{standard_deviation, validate_data_length, validat
 use crate::indicators::IndicatorError;
 use std::collections::VecDeque;
 
-/// Standard Deviation (STD) indicator
+/// Standard Deviation (Std) indicator
 ///
 /// Measures the dispersion of a dataset relative to its mean over a specific period.
 /// Standard deviation is commonly used to measure market volatility. Higher values indicate
@@ -29,11 +29,11 @@ use std::collections::VecDeque;
 /// # Example
 ///
 /// ```
-/// use rsta::indicators::volatility::STD;
+/// use rsta::indicators::volatility::Std;
 /// use rsta::indicators::Indicator;
 ///
 /// // Create a 20-period Standard Deviation indicator
-/// let mut std_dev = STD::new(20).unwrap();
+/// let mut std_dev = Std::new(20).unwrap();
 ///
 /// // Price data
 /// let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
@@ -44,12 +44,12 @@ use std::collections::VecDeque;
 /// let std_values = std_dev.calculate(&prices).unwrap();
 /// ```
 #[derive(Debug)]
-pub struct STD {
+pub struct Std {
     period: usize,
     values: VecDeque<f64>,
 }
 
-impl STD {
+impl Std {
     /// Create a new STD indicator
     ///
     /// # Arguments
@@ -67,7 +67,7 @@ impl STD {
     }
 }
 
-impl Indicator<f64, f64> for STD {
+impl Indicator<f64, f64> for Std {
     fn calculate(&mut self, data: &[f64]) -> Result<Vec<f64>, IndicatorError> {
         validate_data_length(data, self.period)?;
 
@@ -119,7 +119,7 @@ mod tests {
     // Helper function to compare floating point values
     #[test]
     fn test_std_calculation_basic() {
-        let mut std = STD::new(3).unwrap();
+        let mut std = Std::new(3).unwrap();
         let data = vec![2.0, 4.0, 6.0];
 
         let result = std.calculate(&data).unwrap();
@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_std_calculation_multiple_periods() {
-        let mut std = STD::new(2).unwrap();
+        let mut std = Std::new(2).unwrap();
         let data = vec![1.0, 2.0, 3.0];
 
         let result = std.calculate(&data).unwrap();
@@ -154,7 +154,7 @@ mod tests {
     }
     #[test]
     fn test_std_with_decimal_values() {
-        let mut std = STD::new(4).unwrap();
+        let mut std = Std::new(4).unwrap();
         let data = vec![1.5, 2.5, 3.5, 4.5];
 
         let result = std.calculate(&data).unwrap();
@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn test_std_edge_cases() {
         // Test period of 1
-        let mut std = STD::new(1).unwrap();
+        let mut std = Std::new(1).unwrap();
         let data = vec![2.0, 4.0, 6.0, 8.0, 10.0];
 
         let result = std.calculate(&data).unwrap();
@@ -178,7 +178,7 @@ mod tests {
         }
 
         // Test with constant values
-        let mut std = STD::new(3).unwrap();
+        let mut std = Std::new(3).unwrap();
         let data = vec![5.0, 5.0, 5.0, 5.0, 5.0];
 
         let result = std.calculate(&data).unwrap();
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_std_next_value() {
-        let mut std = STD::new(3).unwrap();
+        let mut std = Std::new(3).unwrap();
 
         // First two values should return None
         assert_eq!(std.next(2.0).unwrap(), None);
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn test_std_with_market_pattern() {
-        let mut std = STD::new(5).unwrap();
+        let mut std = Std::new(5).unwrap();
         // Simulated market pattern: trending up with increasing volatility
         let data = vec![
             100.0, 101.0, 101.5, 102.0, 103.0, // low volatility trend
@@ -227,7 +227,7 @@ mod tests {
 
     #[test]
     fn test_std_error_handling() {
-        let mut std = STD::new(5).unwrap();
+        let mut std = Std::new(5).unwrap();
 
         // Test with insufficient data
         let data = vec![1.0, 2.0, 3.0];
@@ -244,11 +244,11 @@ mod tests {
         ));
 
         // Test valid period initialization
-        assert!(STD::new(100).is_ok());
+        assert!(Std::new(100).is_ok());
     }
     #[test]
     fn test_std_reset() {
-        let mut std = STD::new(3).unwrap();
+        let mut std = Std::new(3).unwrap();
 
         // Add some values
         std.next(1.0).unwrap();

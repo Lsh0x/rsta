@@ -4,9 +4,12 @@
 //!
 //! ## Features
 //!
-//! - Technical indicators for price analysis
-//! - Support for both price and volume-based indicators
-//! - Customizable parameters for each indicator
+//! - Momentum indicators: Rsi, StochasticOscillator, WilliamsR
+//! - Trend indicators: Ema, Sma
+//! - Volatility indicators: Atr, BollingerBands, KeltnerChannels, Std
+//! - Volume indicators: Adl, Cmf, Obv, Vroc
+//! - Consistent naming and export patterns across all indicators
+//! - Comprehensive documentation and examples
 //! - Error handling for invalid parameters and insufficient data
 //! - Current version: 0.0.2
 //!

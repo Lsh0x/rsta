@@ -48,11 +48,11 @@ use super::error::IndicatorError;
 /// Using with a complex indicator like Bollinger Bands:
 ///
 /// ```rust,no_run
-/// use rsta::indicators::volatility::{BB, bb::BBResult};
+/// use rsta::indicators::volatility::BollingerBands;
 /// use rsta::indicators::Indicator;
 /// // use of Indicator trait from this module
 /// // Create Bollinger Bands with 20-period and 2 standard deviations
-/// let mut bb = BB::new(20, 2.0).unwrap();
+/// let mut bb = BollingerBands::new(20, 2.0).unwrap();
 ///
 /// // Historical price data
 /// let prices = vec![/* price data */];

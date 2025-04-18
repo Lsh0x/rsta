@@ -59,11 +59,11 @@
 ///
 /// ```rust,no_run
 /// use rsta::indicators::Indicator;
-/// use rsta::indicators::volatility::ATR;
+/// use rsta::indicators::volatility::Atr;
 /// use rsta::indicators::Candle;
 ///
 /// // Create indicator
-/// let mut atr = ATR::new(14).unwrap();
+/// let mut atr = Atr::new(14).unwrap();
 ///
 /// // Create OHLCV data
 /// let candles = vec![
@@ -97,23 +97,18 @@ pub use self::error::IndicatorError;
 pub use self::traits::{Indicator, PriceDataAccessor};
 
 // Re-export momentum indicators
-pub use self::momentum::{StochasticOscillator, StochasticResult, WilliamsR, RSI};
+pub use self::momentum::{Rsi, StochasticOscillator, StochasticResult, WilliamsR};
 
 // Re-export volatility indicators
 pub use self::volatility::{
-    bb::BBResult, KeltnerChannels, KeltnerChannelsResult, ATR as Atr, BB, STD as Std,
+    Atr, BollingerBands, BollingerBandsResult, KeltnerChannels, KeltnerChannelsResult, Std,
 };
 
 // Re-export trend indicators
-pub use self::trend::{EMA as Ema, SMA as Sma};
+pub use self::trend::{Ema, Sma};
 
 // Re-export volume indicators
-pub use self::volume::{
-    Adl,
-    Cmf,
-    Obv,
-    Vroc, // ChaikinMoneyFlow is not public in volume.rs
-};
+pub use self::volume::{Adl, Cmf, Obv, Vroc};
 
 // Re-export utility functions
 pub use self::utils::{

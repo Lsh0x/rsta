@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::indicators::utils::{calculate_ema, validate_data_length, validate_period};
-use crate::indicators::volatility::ATR;
+use crate::indicators::volatility::Atr;
 use crate::indicators::{Candle, Indicator, IndicatorError};
 
 /// Keltner Channels indicator
@@ -176,7 +176,7 @@ impl Indicator<Candle, KeltnerChannelsResult> for KeltnerChannels {
         let atr_offset = self.ema_period.saturating_sub(self.atr_period);
 
         // Calculate ATR values
-        let mut atr = ATR::new(self.atr_period)?;
+        let mut atr = Atr::new(self.atr_period)?;
         let atr_values = atr.calculate(data)?;
 
         // Calculate Keltner Channels for each period where we have both EMA and ATR
@@ -233,7 +233,7 @@ impl Indicator<Candle, KeltnerChannelsResult> for KeltnerChannels {
         }
 
         // Real-time update of ATR
-        let mut atr = ATR::new(self.atr_period)?;
+        let mut atr = Atr::new(self.atr_period)?;
         let candles: Vec<Candle> = self.candle_buffer.iter().cloned().collect();
         let atr_values = atr.calculate(&candles)?;
         self.current_atr = Some(*atr_values.last().unwrap());

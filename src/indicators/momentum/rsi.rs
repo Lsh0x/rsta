@@ -12,11 +12,11 @@ use std::collections::VecDeque;
 /// # Example
 ///
 /// ```
-/// use rsta::indicators::momentum::RSI;
+/// use rsta::indicators::momentum::Rsi;
 /// use rsta::indicators::Indicator;
 ///
 /// // Create a 14-period RSI
-/// let mut rsi = RSI::new(14).unwrap();
+/// let mut rsi = Rsi::new(14).unwrap();
 ///
 /// // Price data
 /// let prices = vec![44.34, 44.09, 44.15, 43.61, 44.33, 44.83, 45.10, 45.42,
@@ -27,7 +27,7 @@ use std::collections::VecDeque;
 /// let rsi_values = rsi.calculate(&prices).unwrap();
 /// ```
 #[derive(Debug)]
-pub struct RSI {
+pub struct Rsi {
     period: usize,
     prev_price: Option<f64>,
     gains: VecDeque<f64>,
@@ -36,7 +36,7 @@ pub struct RSI {
     avg_loss: Option<f64>,
 }
 
-impl RSI {
+impl Rsi {
     /// Create a new RSI indicator
     ///
     /// # Arguments
@@ -74,7 +74,7 @@ impl RSI {
     }
 }
 
-impl Indicator<f64, f64> for RSI {
+impl Indicator<f64, f64> for Rsi {
     fn calculate(&mut self, data: &[f64]) -> Result<Vec<f64>, IndicatorError> {
         validate_data_length(data, self.period + 1)?;
 
@@ -184,18 +184,19 @@ mod tests {
     use super::*;
 
     // RSI Tests
+    // RSI Tests
     #[test]
     fn test_rsi_new() {
         // Valid period should work
-        assert!(RSI::new(14).is_ok());
+        assert!(Rsi::new(14).is_ok());
 
         // Invalid period should fail
-        assert!(RSI::new(0).is_err());
+        assert!(Rsi::new(0).is_err());
     }
 
     #[test]
     fn test_rsi_calculation() {
-        let mut rsi = RSI::new(3).unwrap();
+        let mut rsi = Rsi::new(3).unwrap();
 
         // Sample price data
         let prices = vec![10.0, 11.0, 10.5, 11.5, 12.0, 11.0, 11.5];
@@ -219,7 +220,7 @@ mod tests {
 
     #[test]
     fn test_rsi_next() {
-        let mut rsi = RSI::new(3).unwrap();
+        let mut rsi = Rsi::new(3).unwrap();
 
         // Initial values - not enough data yet
         assert_eq!(rsi.next(10.0).unwrap(), None);
@@ -239,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_rsi_reset() {
-        let mut rsi = RSI::new(3).unwrap();
+        let mut rsi = Rsi::new(3).unwrap();
 
         // Add some values
         rsi.next(10.0).unwrap();

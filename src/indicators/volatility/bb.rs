@@ -6,7 +6,7 @@ use crate::IndicatorError;
 
 /// Bollinger Bands indicator result
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct BBResult {
+pub struct BollingerBandsResult {
     /// Middle band (usually SMA)
     pub middle: f64,
     /// Upper band (middle + k * standard deviation)
@@ -26,11 +26,11 @@ pub struct BBResult {
 /// # Example
 ///
 /// ```
-/// use rsta::indicators::volatility::BB;
+/// use rsta::indicators::volatility::BollingerBands;
 /// use rsta::indicators::Indicator;
 ///
 /// // Create a Bollinger Bands indicator with 20-period SMA and 2 standard deviations
-/// let mut bollinger = BB::new(20, 2.0).unwrap();
+/// let mut bollinger = BollingerBands::new(20, 2.0).unwrap();
 ///
 /// // Price data
 /// let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
@@ -41,14 +41,14 @@ pub struct BBResult {
 /// let bb_values = bollinger.calculate(&prices).unwrap();
 /// ```
 #[derive(Debug)]
-pub struct BB {
+pub struct BollingerBands {
     period: usize,
     k: f64,
     values: VecDeque<f64>,
     sma: Option<f64>,
 }
 
-impl BB {
+impl BollingerBands {
     /// Create a new BB indicator
     ///
     /// # Arguments
@@ -80,8 +80,8 @@ impl BB {
     }
 }
 
-impl Indicator<f64, BBResult> for BB {
-    fn calculate(&mut self, data: &[f64]) -> Result<Vec<BBResult>, IndicatorError> {
+impl Indicator<f64, BollingerBandsResult> for BollingerBands {
+    fn calculate(&mut self, data: &[f64]) -> Result<Vec<BollingerBandsResult>, IndicatorError> {
         validate_data_length(data, self.period)?;
 
         let n = data.len();
@@ -103,7 +103,7 @@ impl Indicator<f64, BBResult> for BB {
             let lower = sma - (self.k * std_dev);
             let bandwidth = (upper - lower) / sma;
 
-            result.push(BBResult {
+            result.push(BollingerBandsResult {
                 middle: sma,
                 upper,
                 lower,
@@ -120,7 +120,7 @@ impl Indicator<f64, BBResult> for BB {
         Ok(result)
     }
 
-    fn next(&mut self, value: f64) -> Result<Option<BBResult>, IndicatorError> {
+    fn next(&mut self, value: f64) -> Result<Option<BollingerBandsResult>, IndicatorError> {
         self.values.push_back(value);
 
         if self.values.len() > self.period {
@@ -134,11 +134,11 @@ impl Indicator<f64, BBResult> for BB {
 
             let upper = sma + (self.k * std_dev);
             let lower = sma - (self.k * std_dev);
-            let bandwidth = (upper - lower) / sma;
-
             self.sma = Some(sma);
 
-            Ok(Some(BBResult {
+            let bandwidth = (upper - lower) / sma;
+
+            Ok(Some(BollingerBandsResult {
                 middle: sma,
                 upper,
                 lower,
@@ -163,18 +163,18 @@ mod tests {
     #[test]
     fn test_bollinger_bands_new() {
         // Valid parameters should work
-        assert!(BB::new(20, 2.0).is_ok());
+        assert!(BollingerBands::new(20, 2.0).is_ok());
 
         // Invalid period should fail
-        assert!(BB::new(0, 2.0).is_err());
+        assert!(BollingerBands::new(0, 2.0).is_err());
 
         // Negative multiplier should fail
-        assert!(BB::new(20, -1.0).is_err());
+        assert!(BollingerBands::new(20, -1.0).is_err());
     }
 
     #[test]
     fn test_bollinger_bands_calculation() {
-        let mut bb = BB::new(3, 2.0).unwrap();
+        let mut bb = BollingerBands::new(3, 2.0).unwrap();
 
         // Sample price data with constant standard deviation of 2
         let prices = vec![5.0, 7.0, 9.0, 11.0, 13.0];
@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_bollinger_bands_next() {
-        let mut bb = BB::new(3, 2.0).unwrap();
+        let mut bb = BollingerBands::new(3, 2.0).unwrap();
 
         // Initial values - not enough data yet
         assert_eq!(bb.next(5.0).unwrap(), None);
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_bollinger_bands_reset() {
-        let mut bb = BB::new(3, 2.0).unwrap();
+        let mut bb = BollingerBands::new(3, 2.0).unwrap();
 
         // Add some values
         bb.next(5.0).unwrap();

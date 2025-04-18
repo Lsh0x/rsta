@@ -11,6 +11,6 @@ pub mod stochastic_oscillator;
 pub mod williams_r;
 
 // Re-export public types to maintain the same interface
-pub use self::rsi::RSI;
+pub use self::rsi::Rsi;
 pub use self::stochastic_oscillator::{StochasticOscillator, StochasticResult};
 pub use self::williams_r::WilliamsR;

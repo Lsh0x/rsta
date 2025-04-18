@@ -8,11 +8,11 @@ use crate::IndicatorError;
 /// # Example
 ///
 /// ```
-/// use rsta::indicators::trend::EMA;
+/// use rsta::indicators::trend::Ema;
 /// use rsta::indicators::Indicator;
 ///
 /// // Create a 5-period EMA
-/// let mut ema = EMA::new(5).unwrap();
+/// let mut ema = Ema::new(5).unwrap();
 ///
 /// // Price data
 /// let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0];
@@ -21,13 +21,13 @@ use crate::IndicatorError;
 /// let ema_values = ema.calculate(&prices).unwrap();
 /// ```
 #[derive(Debug)]
-pub struct EMA {
+pub struct Ema {
     period: usize,
     alpha: f64,
     current_ema: Option<f64>,
 }
 
-impl EMA {
+impl Ema {
     /// Create a new EMA indicator
     ///
     /// # Arguments
@@ -58,7 +58,7 @@ impl EMA {
     }
 }
 
-impl Indicator<f64, f64> for EMA {
+impl Indicator<f64, f64> for Ema {
     fn calculate(&mut self, data: &[f64]) -> Result<Vec<f64>, IndicatorError> {
         calculate_ema(data, self.period)
     }
@@ -88,15 +88,15 @@ mod tests {
     #[test]
     fn test_ema_new() {
         // Valid period should work
-        assert!(EMA::new(14).is_ok());
+        assert!(Ema::new(14).is_ok());
 
         // Invalid period should fail
-        assert!(EMA::new(0).is_err());
+        assert!(Ema::new(0).is_err());
     }
 
     #[test]
     fn test_ema_calculation() {
-        let mut ema = EMA::new(3).unwrap();
+        let mut ema = Ema::new(3).unwrap();
         let data = vec![2.0, 4.0, 6.0, 8.0, 10.0];
 
         let result = ema.calculate(&data).unwrap();
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_ema_next() {
-        let mut ema = EMA::new(3).unwrap();
+        let mut ema = Ema::new(3).unwrap();
         let alpha = 0.5; // alpha = 2/(3+1)
 
         // First value becomes the seed
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn test_ema_reset() {
-        let mut ema = EMA::new(3).unwrap();
+        let mut ema = Ema::new(3).unwrap();
 
         // Add some values
         ema.next(2.0).unwrap();
