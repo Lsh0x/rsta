@@ -45,7 +45,7 @@
 /// println!("SMA values: {:?}", sma_values);
 ///
 /// // Or real-time updates
-/// sma.reset(); // Reset the state first
+/// sma.reset_state(); // Reset the state first
 /// for price in prices {
 ///     if let Some(value) = sma.next(price).unwrap() {
 ///         println!("New SMA value: {}", value);

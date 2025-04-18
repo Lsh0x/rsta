@@ -25,9 +25,12 @@ use super::error::IndicatorError;
 /// ```rust,no_run
 /// use rsta::indicators::Sma;
 /// use rsta::indicators::Indicator;
+/// use rsta::indicators::Candle;
 /// // use of Indicator trait from this module
 /// // Create a 14-period SMA
+/// // Explicitly working with f64 data to avoid ambiguity
 /// let mut sma = Sma::new(14).unwrap();
+/// let _: Vec<f64> = Vec::new(); // Type hint to help compiler
 ///
 /// // Historical price data
 /// let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
@@ -37,7 +40,8 @@ use super::error::IndicatorError;
 /// let sma_values = sma.calculate(&prices).unwrap();
 ///
 /// // Real-time updates
-/// sma.reset();
+/// // Using fully qualified syntax to resolve ambiguity between different Indicator implementations
+/// <Sma as Indicator<f64, f64>>::reset(&mut sma);
 /// for price in prices {
 ///     if let Ok(Some(value)) = sma.next(price) {
 ///         println!("New SMA value: {}", value);
