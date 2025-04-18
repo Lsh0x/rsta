@@ -244,10 +244,7 @@ impl KeltnerChannelsPrice {
     ///
     /// # Returns
     /// * `Result<Self, IndicatorError>` - A new KeltnerChannelsPrice or an error
-    pub fn new(
-        ema_period: usize,
-        atr_period: usize,
-    ) -> Result<Self, IndicatorError> {
+    pub fn new(ema_period: usize, atr_period: usize) -> Result<Self, IndicatorError> {
         // Validate periods and multiplier
         if ema_period < 1 {
             return Err(IndicatorError::InvalidParameter(
@@ -540,7 +537,7 @@ mod tests {
         // With EMA period 3 and ATR period 2, we need at least 3 data points
         // Print result length for debugging
         println!("Result length: {}", result.len());
-        
+
         // Check that we get enough results
         assert!(result.len() > 0);
 

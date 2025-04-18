@@ -69,7 +69,7 @@ impl Rsi {
         if avg_gain == 0.0 && avg_loss == 0.0 {
             return 50.0;
         }
-        
+
         // Edge case: If loss is 0 but gain is not, market is 100% up (RSI = 100)
         if avg_loss == 0.0 {
             return 100.0;
@@ -247,7 +247,7 @@ impl Indicator<Candle, f64> for Rsi {
 
     fn next(&mut self, candle: Candle) -> Result<Option<f64>, IndicatorError> {
         let close_price = candle.close;
-        
+
         if let Some(prev) = self.prev_price {
             let change = close_price - prev;
             let gain = if change > 0.0 { change } else { 0.0 };
@@ -378,13 +378,62 @@ mod tests {
 
         // Sample candle data with same close prices as the f64 test
         let candles = vec![
-            Candle { timestamp: 1, open: 9.0, high: 10.5, low: 8.5, close: 10.0, volume: 1000.0 },
-            Candle { timestamp: 2, open: 10.5, high: 11.5, low: 10.0, close: 11.0, volume: 1200.0 },
-            Candle { timestamp: 3, open: 11.0, high: 11.5, low: 10.0, close: 10.5, volume: 1100.0 },
-            Candle { timestamp: 4, open: 10.0, high: 12.0, low: 10.0, close: 11.5, volume: 1300.0 },
-            Candle { timestamp: 5, open: 11.5, high: 12.5, low: 11.0, close: 12.0, volume: 1400.0 },
-            Candle { timestamp: 6, open: 12.0, high: 12.0, low: 10.5, close: 11.0, volume: 1500.0 },
-            Candle { timestamp: 7, open: 11.0, high: 12.0, low: 11.0, close: 11.5, volume: 1600.0 },
+            Candle {
+                timestamp: 1,
+                open: 9.0,
+                high: 10.5,
+                low: 8.5,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.5,
+                high: 11.5,
+                low: 10.0,
+                close: 11.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 11.0,
+                high: 11.5,
+                low: 10.0,
+                close: 10.5,
+                volume: 1100.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.0,
+                high: 12.0,
+                low: 10.0,
+                close: 11.5,
+                volume: 1300.0,
+            },
+            Candle {
+                timestamp: 5,
+                open: 11.5,
+                high: 12.5,
+                low: 11.0,
+                close: 12.0,
+                volume: 1400.0,
+            },
+            Candle {
+                timestamp: 6,
+                open: 12.0,
+                high: 12.0,
+                low: 10.5,
+                close: 11.0,
+                volume: 1500.0,
+            },
+            Candle {
+                timestamp: 7,
+                open: 11.0,
+                high: 12.0,
+                low: 11.0,
+                close: 11.5,
+                volume: 1600.0,
+            },
         ];
 
         let result = rsi.calculate(&candles).unwrap();
@@ -401,7 +450,7 @@ mod tests {
         let close_prices: Vec<f64> = candles.iter().map(|c| c.close).collect();
         let mut price_rsi = Rsi::new(3).unwrap();
         let price_result = price_rsi.calculate(&close_prices).unwrap();
-        
+
         // Compare each value to ensure candle and f64 implementations produce identical results
         for (candle_rsi, price_rsi) in result.iter().zip(price_result.iter()) {
             assert!((candle_rsi - price_rsi).abs() < 0.000001);
@@ -414,10 +463,38 @@ mod tests {
 
         // Create candles with same close prices as the f64 test
         let candles = vec![
-            Candle { timestamp: 1, open: 9.0, high: 10.5, low: 8.5, close: 10.0, volume: 1000.0 },
-            Candle { timestamp: 2, open: 10.5, high: 11.5, low: 10.0, close: 11.0, volume: 1200.0 },
-            Candle { timestamp: 3, open: 11.0, high: 11.5, low: 10.0, close: 10.5, volume: 1100.0 },
-            Candle { timestamp: 4, open: 10.0, high: 12.0, low: 10.0, close: 11.5, volume: 1300.0 },
+            Candle {
+                timestamp: 1,
+                open: 9.0,
+                high: 10.5,
+                low: 8.5,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.5,
+                high: 11.5,
+                low: 10.0,
+                close: 11.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 11.0,
+                high: 11.5,
+                low: 10.0,
+                close: 10.5,
+                volume: 1100.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.0,
+                high: 12.0,
+                low: 10.0,
+                close: 11.5,
+                volume: 1300.0,
+            },
         ];
 
         // Initial values - not enough data yet
@@ -448,23 +525,79 @@ mod tests {
 
         // Create candles with varying open/high/low but identical close prices
         let candles = vec![
-            Candle { timestamp: 1, open: 15.0, high: 20.0, low: 5.0, close: 10.0, volume: 5000.0 },
-            Candle { timestamp: 2, open: 25.0, high: 30.0, low: 8.0, close: 11.0, volume: 6000.0 },
-            Candle { timestamp: 3, open: 5.0, high: 15.0, low: 2.0, close: 10.5, volume: 7000.0 },
-            Candle { timestamp: 4, open: 20.0, high: 25.0, low: 9.0, close: 11.5, volume: 8000.0 },
+            Candle {
+                timestamp: 1,
+                open: 15.0,
+                high: 20.0,
+                low: 5.0,
+                close: 10.0,
+                volume: 5000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 25.0,
+                high: 30.0,
+                low: 8.0,
+                close: 11.0,
+                volume: 6000.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 5.0,
+                high: 15.0,
+                low: 2.0,
+                close: 10.5,
+                volume: 7000.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 20.0,
+                high: 25.0,
+                low: 9.0,
+                close: 11.5,
+                volume: 8000.0,
+            },
         ];
 
         // Create candles with same close prices but different open/high/low
         let candles2 = vec![
-            Candle { timestamp: 1, open: 9.0, high: 10.5, low: 8.5, close: 10.0, volume: 1000.0 },
-            Candle { timestamp: 2, open: 10.5, high: 11.5, low: 10.0, close: 11.0, volume: 1200.0 },
-            Candle { timestamp: 3, open: 11.0, high: 11.5, low: 10.0, close: 10.5, volume: 1100.0 },
-            Candle { timestamp: 4, open: 10.0, high: 12.0, low: 10.0, close: 11.5, volume: 1300.0 },
+            Candle {
+                timestamp: 1,
+                open: 9.0,
+                high: 10.5,
+                low: 8.5,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.5,
+                high: 11.5,
+                low: 10.0,
+                close: 11.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 11.0,
+                high: 11.5,
+                low: 10.0,
+                close: 10.5,
+                volume: 1100.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.0,
+                high: 12.0,
+                low: 10.0,
+                close: 11.5,
+                volume: 1300.0,
+            },
         ];
 
         // Calculate RSI for both sets
         let result1 = rsi.calculate(&candles).unwrap();
-        
+
         // Reset and calculate for second set
         rsi.reset_state();
         let result2 = rsi.calculate(&candles2).unwrap();
@@ -481,16 +614,59 @@ mod tests {
         let mut rsi = Rsi::new(3).unwrap();
 
         // Add some values
-        rsi.next(Candle { timestamp: 1, open: 9.0, high: 10.5, low: 8.5, close: 10.0, volume: 1000.0 }).unwrap();
-        rsi.next(Candle { timestamp: 2, open: 10.5, high: 11.5, low: 10.0, close: 11.0, volume: 1200.0 }).unwrap();
-        rsi.next(Candle { timestamp: 3, open: 11.0, high: 11.5, low: 10.0, close: 10.5, volume: 1100.0 }).unwrap();
-        rsi.next(Candle { timestamp: 4, open: 10.0, high: 12.0, low: 10.0, close: 11.5, volume: 1300.0 }).unwrap(); // This should produce a result
+        rsi.next(Candle {
+            timestamp: 1,
+            open: 9.0,
+            high: 10.5,
+            low: 8.5,
+            close: 10.0,
+            volume: 1000.0,
+        })
+        .unwrap();
+        rsi.next(Candle {
+            timestamp: 2,
+            open: 10.5,
+            high: 11.5,
+            low: 10.0,
+            close: 11.0,
+            volume: 1200.0,
+        })
+        .unwrap();
+        rsi.next(Candle {
+            timestamp: 3,
+            open: 11.0,
+            high: 11.5,
+            low: 10.0,
+            close: 10.5,
+            volume: 1100.0,
+        })
+        .unwrap();
+        rsi.next(Candle {
+            timestamp: 4,
+            open: 10.0,
+            high: 12.0,
+            low: 10.0,
+            close: 11.5,
+            volume: 1300.0,
+        })
+        .unwrap(); // This should produce a result
 
         // Reset
         rsi.reset_state();
 
         // Should be back to initial state
-        assert_eq!(rsi.next(Candle { timestamp: 5, open: 11.5, high: 12.5, low: 11.0, close: 12.0, volume: 1400.0 }).unwrap(), None);
+        assert_eq!(
+            rsi.next(Candle {
+                timestamp: 5,
+                open: 11.5,
+                high: 12.5,
+                low: 11.0,
+                close: 12.0,
+                volume: 1400.0
+            })
+            .unwrap(),
+            None
+        );
     }
 
     #[test]
@@ -499,10 +675,38 @@ mod tests {
 
         // Test with identical close prices (no change)
         let flat_candles = vec![
-            Candle { timestamp: 1, open: 9.0, high: 10.5, low: 8.5, close: 10.0, volume: 1000.0 },
-            Candle { timestamp: 2, open: 10.5, high: 11.5, low: 10.0, close: 10.0, volume: 1200.0 },
-            Candle { timestamp: 3, open: 11.0, high: 11.5, low: 10.0, close: 10.0, volume: 1100.0 },
-            Candle { timestamp: 4, open: 10.0, high: 12.0, low: 10.0, close: 10.0, volume: 1300.0 },
+            Candle {
+                timestamp: 1,
+                open: 9.0,
+                high: 10.5,
+                low: 8.5,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.5,
+                high: 11.5,
+                low: 10.0,
+                close: 10.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 11.0,
+                high: 11.5,
+                low: 10.0,
+                close: 10.0,
+                volume: 1100.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.0,
+                high: 12.0,
+                low: 10.0,
+                close: 10.0,
+                volume: 1300.0,
+            },
         ];
 
         let result = rsi.calculate(&flat_candles).unwrap();
@@ -511,10 +715,38 @@ mod tests {
         // Test with only up movements (all gains, no losses)
         let mut rsi = Rsi::new(3).unwrap();
         let up_candles = vec![
-            Candle { timestamp: 1, open: 9.0, high: 10.5, low: 8.5, close: 10.0, volume: 1000.0 },
-            Candle { timestamp: 2, open: 10.5, high: 11.5, low: 10.0, close: 11.0, volume: 1200.0 },
-            Candle { timestamp: 3, open: 11.0, high: 11.5, low: 10.0, close: 12.0, volume: 1100.0 },
-            Candle { timestamp: 4, open: 12.0, high: 13.0, low: 11.0, close: 13.0, volume: 1300.0 },
+            Candle {
+                timestamp: 1,
+                open: 9.0,
+                high: 10.5,
+                low: 8.5,
+                close: 10.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 10.5,
+                high: 11.5,
+                low: 10.0,
+                close: 11.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 11.0,
+                high: 11.5,
+                low: 10.0,
+                close: 12.0,
+                volume: 1100.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 12.0,
+                high: 13.0,
+                low: 11.0,
+                close: 13.0,
+                volume: 1300.0,
+            },
         ];
 
         let result = rsi.calculate(&up_candles).unwrap();
@@ -523,10 +755,38 @@ mod tests {
         // Test with only down movements (all losses, no gains)
         let mut rsi = Rsi::new(3).unwrap();
         let down_candles = vec![
-            Candle { timestamp: 1, open: 14.0, high: 15.0, low: 13.5, close: 14.0, volume: 1000.0 },
-            Candle { timestamp: 2, open: 13.5, high: 14.0, low: 13.0, close: 13.0, volume: 1200.0 },
-            Candle { timestamp: 3, open: 13.0, high: 13.0, low: 12.0, close: 12.0, volume: 1100.0 },
-            Candle { timestamp: 4, open: 12.0, high: 12.0, low: 11.0, close: 11.0, volume: 1300.0 },
+            Candle {
+                timestamp: 1,
+                open: 14.0,
+                high: 15.0,
+                low: 13.5,
+                close: 14.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 13.5,
+                high: 14.0,
+                low: 13.0,
+                close: 13.0,
+                volume: 1200.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 13.0,
+                high: 13.0,
+                low: 12.0,
+                close: 12.0,
+                volume: 1100.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 12.0,
+                high: 12.0,
+                low: 11.0,
+                close: 11.0,
+                volume: 1300.0,
+            },
         ];
 
         let result = rsi.calculate(&down_candles).unwrap();

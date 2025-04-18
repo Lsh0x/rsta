@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::indicators::utils::{calculate_sma, standard_deviation, validate_data_length};
-use crate::indicators::{Candle, validate_period, Indicator};
+use crate::indicators::{validate_period, Candle, Indicator};
 use crate::IndicatorError;
 
 /// Bollinger Bands indicator result
@@ -109,7 +109,7 @@ impl BollingerBands {
     fn calculate_sma(&self) -> f64 {
         self.values.iter().sum::<f64>() / self.values.len() as f64
     }
-    
+
     /// Reset the Bollinger Bands indicator state
     pub fn reset_state(&mut self) {
         self.values.clear();
@@ -198,7 +198,7 @@ impl Indicator<Candle, BollingerBandsResult> for BollingerBands {
 
         // Extract close prices from candles
         let close_prices: Vec<f64> = data.iter().map(|candle| candle.close).collect();
-        
+
         // Use the existing implementation for f64 data
         self.calculate(&close_prices)
     }
@@ -297,7 +297,7 @@ mod tests {
         // Should be back to initial state
         assert_eq!(bb.next(11.0).unwrap(), None);
     }
-    
+
     // Tests for candle data
     #[test]
     fn test_bollinger_bands_calculation_with_candles() {
@@ -305,11 +305,46 @@ mod tests {
 
         // Create candles with specific close prices
         let candles = vec![
-            Candle { timestamp: 1, open: 4.5, high: 5.5, low: 4.5, close: 5.0, volume: 1000.0 },
-            Candle { timestamp: 2, open: 6.5, high: 7.5, low: 6.5, close: 7.0, volume: 1000.0 },
-            Candle { timestamp: 3, open: 8.5, high: 9.5, low: 8.5, close: 9.0, volume: 1000.0 },
-            Candle { timestamp: 4, open: 10.5, high: 11.5, low: 10.5, close: 11.0, volume: 1000.0 },
-            Candle { timestamp: 5, open: 12.5, high: 13.5, low: 12.5, close: 13.0, volume: 1000.0 },
+            Candle {
+                timestamp: 1,
+                open: 4.5,
+                high: 5.5,
+                low: 4.5,
+                close: 5.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 2,
+                open: 6.5,
+                high: 7.5,
+                low: 6.5,
+                close: 7.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 3,
+                open: 8.5,
+                high: 9.5,
+                low: 8.5,
+                close: 9.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 4,
+                open: 10.5,
+                high: 11.5,
+                low: 10.5,
+                close: 11.0,
+                volume: 1000.0,
+            },
+            Candle {
+                timestamp: 5,
+                open: 12.5,
+                high: 13.5,
+                low: 12.5,
+                close: 13.0,
+                volume: 1000.0,
+            },
         ];
 
         let result = bb.calculate(&candles).unwrap();
@@ -330,7 +365,7 @@ mod tests {
         let prices = vec![5.0, 7.0, 9.0, 11.0, 13.0];
         let mut bb_prices = BollingerBands::new(3, 2.0).unwrap();
         let price_result = bb_prices.calculate(&prices).unwrap();
-        
+
         // Results should be identical
         for (res_candle, res_price) in result.iter().zip(price_result.iter()) {
             assert!((res_candle.middle - res_price.middle).abs() < 0.000001);
@@ -345,14 +380,35 @@ mod tests {
         let mut bb = BollingerBands::new(3, 2.0).unwrap();
 
         // Initial values - not enough data yet
-        let candle1 = Candle { timestamp: 1, open: 4.5, high: 5.5, low: 4.5, close: 5.0, volume: 1000.0 };
-        let candle2 = Candle { timestamp: 2, open: 6.5, high: 7.5, low: 6.5, close: 7.0, volume: 1000.0 };
-        
+        let candle1 = Candle {
+            timestamp: 1,
+            open: 4.5,
+            high: 5.5,
+            low: 4.5,
+            close: 5.0,
+            volume: 1000.0,
+        };
+        let candle2 = Candle {
+            timestamp: 2,
+            open: 6.5,
+            high: 7.5,
+            low: 6.5,
+            close: 7.0,
+            volume: 1000.0,
+        };
+
         assert_eq!(bb.next(candle1).unwrap(), None);
         assert_eq!(bb.next(candle2).unwrap(), None);
 
         // Third value - now we have Bollinger Bands
-        let candle3 = Candle { timestamp: 3, open: 8.5, high: 9.5, low: 8.5, close: 9.0, volume: 1000.0 };
+        let candle3 = Candle {
+            timestamp: 3,
+            open: 8.5,
+            high: 9.5,
+            low: 8.5,
+            close: 9.0,
+            volume: 1000.0,
+        };
         let result = bb.next(candle3).unwrap();
         assert!(result.is_some());
 
@@ -360,13 +416,13 @@ mod tests {
         assert!((bands.middle - 7.0).abs() < 0.1);
         assert!((bands.upper - 11.0).abs() < 2.0); // Increase tolerance
         assert!((bands.lower - 3.0).abs() < 2.0); // Increase tolerance
-        
+
         // Compare with raw price calculation
         let mut bb_prices = BollingerBands::new(3, 2.0).unwrap();
         bb_prices.next(5.0).unwrap();
         bb_prices.next(7.0).unwrap();
         let price_result = bb_prices.next(9.0).unwrap().unwrap();
-        
+
         assert!((bands.middle - price_result.middle).abs() < 0.000001);
         assert!((bands.upper - price_result.upper).abs() < 0.000001);
         assert!((bands.lower - price_result.lower).abs() < 0.000001);
@@ -378,10 +434,31 @@ mod tests {
         let mut bb = BollingerBands::new(3, 2.0).unwrap();
 
         // Add some values
-        let candle1 = Candle { timestamp: 1, open: 4.5, high: 5.5, low: 4.5, close: 5.0, volume: 1000.0 };
-        let candle2 = Candle { timestamp: 2, open: 6.5, high: 7.5, low: 6.5, close: 7.0, volume: 1000.0 };
-        let candle3 = Candle { timestamp: 3, open: 8.5, high: 9.5, low: 8.5, close: 9.0, volume: 1000.0 };
-        
+        let candle1 = Candle {
+            timestamp: 1,
+            open: 4.5,
+            high: 5.5,
+            low: 4.5,
+            close: 5.0,
+            volume: 1000.0,
+        };
+        let candle2 = Candle {
+            timestamp: 2,
+            open: 6.5,
+            high: 7.5,
+            low: 6.5,
+            close: 7.0,
+            volume: 1000.0,
+        };
+        let candle3 = Candle {
+            timestamp: 3,
+            open: 8.5,
+            high: 9.5,
+            low: 8.5,
+            close: 9.0,
+            volume: 1000.0,
+        };
+
         bb.next(candle1).unwrap();
         bb.next(candle2).unwrap();
         bb.next(candle3).unwrap(); // This should produce a result
@@ -390,7 +467,14 @@ mod tests {
         bb.reset_state();
 
         // Should be back to initial state
-        let candle4 = Candle { timestamp: 4, open: 10.5, high: 11.5, low: 10.5, close: 11.0, volume: 1000.0 };
+        let candle4 = Candle {
+            timestamp: 4,
+            open: 10.5,
+            high: 11.5,
+            low: 10.5,
+            close: 11.0,
+            volume: 1000.0,
+        };
         assert_eq!(bb.next(candle4).unwrap(), None);
     }
 }

@@ -51,7 +51,7 @@ impl WilliamsR {
     pub fn new(period: usize) -> Result<Self, IndicatorError> {
         validate_period(period, 1)?;
 
-        Ok(Self { 
+        Ok(Self {
             period,
             history: Vec::with_capacity(period), // Initialize history with capacity
         })
@@ -119,17 +119,17 @@ impl Indicator<Candle, f64> for WilliamsR {
     fn next(&mut self, value: Candle) -> Result<Option<f64>, IndicatorError> {
         // Add the new candle to history
         self.history.push(value);
-        
+
         // If we have more candles than needed, remove the oldest one
         if self.history.len() > self.period {
             self.history.remove(0);
         }
-        
+
         // If we don't have enough data yet, return None
         if self.history.len() < self.period {
             return Ok(None);
         }
-        
+
         // Calculate Williams %R using the history
         let r_value = Self::calculate_r(&self.history, self.history.len() - 1, self.period);
         Ok(Some(r_value))
@@ -236,11 +236,11 @@ mod tests {
             close: 12.0,
             volume: 1000.0,
         };
-        
+
         // First two candles should return None (not enough data)
         assert_eq!(williams_r.next(candle1).unwrap(), None);
         assert_eq!(williams_r.next(candle2).unwrap(), None);
-        
+
         // Third candle should return a value
         let candle3 = Candle {
             timestamp: 3,
@@ -254,7 +254,7 @@ mod tests {
         assert!(result3.is_some());
         let r_value3 = result3.unwrap();
         assert!(r_value3 <= 0.0 && r_value3 >= -100.0);
-        
+
         // Fourth candle should return a value and maintain sliding window
         let candle4 = Candle {
             timestamp: 4,
@@ -268,7 +268,7 @@ mod tests {
         assert!(result4.is_some());
         let r_value4 = result4.unwrap();
         assert!(r_value4 <= 0.0 && r_value4 >= -100.0);
-        
+
         // Verify reset clears history
         williams_r.reset();
         let candle5 = Candle {
