@@ -462,7 +462,7 @@ mod tests {
         let mut rsi = Rsi::new(3).unwrap();
 
         // Create candles with same close prices as the f64 test
-        let candles = vec![
+        let candles = [
             Candle {
                 timestamp: 1,
                 open: 9.0,

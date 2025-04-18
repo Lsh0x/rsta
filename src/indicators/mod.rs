@@ -7,7 +7,7 @@
 ///
 /// The indicators are organized into four main categories:
 ///
-/// - [`trend`]: Trend following indicators like Moving Averages
+/// - [`trend`]: Trend following indicators like Moving Averages and MACD
 /// - [`momentum`]: Momentum indicators like RSI and Stochastic Oscillator
 /// - [`volume`]: Volume-based indicators like OBV and A/D Line
 /// - [`volatility`]: Volatility indicators like ATR and Bollinger Bands
@@ -103,9 +103,8 @@ pub use self::momentum::{Rsi, StochasticOscillator, StochasticResult, WilliamsR}
 pub use self::volatility::{
     Atr, BollingerBands, BollingerBandsResult, KeltnerChannels, KeltnerChannelsResult, Std,
 };
-
 // Re-export trend indicators
-pub use self::trend::{Ema, Sma};
+pub use self::trend::{Ema, Macd, MacdResult, Sma};
 
 // Re-export volume indicators
 pub use self::volume::{Adl, Cmf, Obv, Vroc};
