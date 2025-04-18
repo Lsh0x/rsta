@@ -38,7 +38,7 @@ use thiserror::Error;
 ///     _ => println!("Unexpected result"),
 /// }
 /// ```
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone, PartialEq)]
 pub enum IndicatorError {
     /// Error for invalid parameters (e.g., negative period, invalid multiplier)
     #[error("Invalid parameter: {0}")]

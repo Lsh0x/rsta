@@ -109,9 +109,10 @@ pub use self::trend::{EMA as Ema, SMA as Sma};
 
 // Re-export volume indicators
 pub use self::volume::{
-    AccumulationDistributionLine,
-    OnBalanceVolume,
-    VolumeRateOfChange, // ChaikinMoneyFlow is not public in volume.rs
+    Adl,
+    Cmf,
+    Obv,
+    Vroc, // ChaikinMoneyFlow is not public in volume.rs
 };
 
 // Re-export utility functions
