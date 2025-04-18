@@ -59,7 +59,7 @@ use super::error::IndicatorError;
 /// let mut bb = BollingerBands::new(20, 2.0).unwrap();
 ///
 /// // Historical price data
-/// let prices = vec![/* price data */];
+/// let prices: Vec::<f64> = vec![/* price data */];
 ///
 /// // Batch calculation
 /// let bb_values = bb.calculate(&prices).unwrap();
