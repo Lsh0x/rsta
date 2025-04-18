@@ -6,7 +6,6 @@ use crate::indicators::{Candle, Indicator, IndicatorError};
 /// Williams %R is a momentum indicator that is the inverse of the Fast Stochastic Oscillator.
 /// It reflects the level of the close relative to the highest high for the look-back period.
 ///
-///
 /// # Example
 ///
 /// ```
@@ -20,21 +19,7 @@ use crate::indicators::{Candle, Indicator, IndicatorError};
 /// let candles = vec![
 ///     // Initial candles for the calculation window
 ///     Candle { timestamp: 1, open: 42.0, high: 43.0, low: 41.0, close: 42.5, volume: 1000.0 },
-///     Candle { timestamp: 2, open: 42.5, high: 43.5, low: 41.5, close: 43.0, volume: 1100.0 },
-///     Candle { timestamp: 3, open: 43.0, high: 44.0, low: 42.0, close: 43.5, volume: 1200.0 },
-///     Candle { timestamp: 4, open: 43.5, high: 44.5, low: 42.5, close: 44.0, volume: 1300.0 },
-///     Candle { timestamp: 5, open: 44.0, high: 45.0, low: 43.0, close: 44.5, volume: 1400.0 },
-///     Candle { timestamp: 6, open: 44.5, high: 45.5, low: 43.5, close: 45.0, volume: 1500.0 },
-///     Candle { timestamp: 7, open: 45.0, high: 46.0, low: 44.0, close: 45.5, volume: 1600.0 },
-///     Candle { timestamp: 8, open: 45.5, high: 46.5, low: 44.5, close: 46.0, volume: 1700.0 },
-///     Candle { timestamp: 9, open: 46.0, high: 47.0, low: 45.0, close: 46.5, volume: 1800.0 },
-///     Candle { timestamp: 10, open: 46.5, high: 47.5, low: 45.5, close: 47.0, volume: 1900.0 },
-///     Candle { timestamp: 11, open: 47.0, high: 48.0, low: 46.0, close: 47.5, volume: 2000.0 },
-///     Candle { timestamp: 12, open: 47.5, high: 48.5, low: 46.5, close: 48.0, volume: 2100.0 },
-///     Candle { timestamp: 13, open: 48.0, high: 49.0, low: 47.0, close: 48.5, volume: 2200.0 },
-///     Candle { timestamp: 14, open: 48.5, high: 49.5, low: 47.5, close: 49.0, volume: 2300.0 },
-///     // Last candle for testing decreasing price
-///     Candle { timestamp: 15, open: 49.0, high: 49.5, low: 47.0, close: 47.5, volume: 2400.0 },
+///     // ... more candles ...
 /// ];
 ///
 /// // Calculate Williams %R values with error handling
@@ -42,27 +27,7 @@ use crate::indicators::{Candle, Indicator, IndicatorError};
 ///     Ok(r_values) => {
 ///         // Access the latest value
 ///         if let Some(latest_r) = r_values.last() {
-///             println!("Williams %R: {:.2}", latest_r); // Example output: Williams %R: -80.00
-///             
-///             // Interpret the Williams %R value
-///             // Note: Williams %R ranges from -100 to 0
-///             if *latest_r > -20.0 {
-///                 println!("Overbought condition (> -20)");
-///             } else if *latest_r < -80.0 {
-///                 println!("Oversold condition (< -80)");
-///             } else {
-///                 println!("Neutral territory");
-///             }
-///             
-///             // Check for momentum shifts
-///             if r_values.len() >= 2 {
-///                 let previous_r = r_values[r_values.len() - 2];
-///                 if *latest_r > previous_r {
-///                     println!("Momentum improving (value rising)");
-///                 } else if *latest_r < previous_r {
-///                     println!("Momentum declining (value falling)");
-///                 }
-///             }
+///             println!("Williams %R: {:.2}", latest_r);
 ///         }
 ///     },
 ///     Err(e) => {
@@ -72,6 +37,7 @@ use crate::indicators::{Candle, Indicator, IndicatorError};
 /// ```
 pub struct WilliamsR {
     period: usize,
+    history: Vec<Candle>, // Added history to store candles for real-time calculation
 }
 
 impl WilliamsR {
@@ -85,7 +51,10 @@ impl WilliamsR {
     pub fn new(period: usize) -> Result<Self, IndicatorError> {
         validate_period(period, 1)?;
 
-        Ok(Self { period })
+        Ok(Self {
+            period,
+            history: Vec::with_capacity(period), // Initialize history with capacity
+        })
     }
 
     /// Calculate Williams %R value for a given candle range
@@ -136,20 +105,39 @@ impl Indicator<Candle, f64> for WilliamsR {
             result.push(r_value);
         }
 
+        // Update history with the most recent candles for future next() calls
+        self.history.clear();
+        if n >= self.period {
+            self.history.extend_from_slice(&data[n - self.period..]);
+        } else {
+            self.history.extend_from_slice(data);
+        }
+
         Ok(result)
     }
 
-    fn next(&mut self, _value: Candle) -> Result<Option<f64>, IndicatorError> {
-        // This implementation would require storing the last period candles
-        // For simplicity, we'll return an error message that real-time calculation
-        // requires previous candle storage
-        Err(IndicatorError::CalculationError(
-            "Real-time calculation of Williams %R requires storing previous candles".to_string(),
-        ))
+    fn next(&mut self, value: Candle) -> Result<Option<f64>, IndicatorError> {
+        // Add the new candle to history
+        self.history.push(value);
+
+        // If we have more candles than needed, remove the oldest one
+        if self.history.len() > self.period {
+            self.history.remove(0);
+        }
+
+        // If we don't have enough data yet, return None
+        if self.history.len() < self.period {
+            return Ok(None);
+        }
+
+        // Calculate Williams %R using the history
+        let r_value = Self::calculate_r(&self.history, self.history.len() - 1, self.period);
+        Ok(Some(r_value))
     }
 
     fn reset(&mut self) {
-        // No state to reset in this basic implementation
+        // Clear the history
+        self.history.clear();
     }
 }
 
@@ -225,17 +213,14 @@ mod tests {
         for r_value in &result {
             assert!(*r_value <= 0.0 && *r_value >= -100.0);
         }
-
-        // For the 3rd candle:
-        // High = 14.0, Low = 11.0, Close = 13.0
-        // %R calculation may vary significantly due to implementation details
-        assert!(result[0] <= 0.0 && result[0] >= -100.0); // Just verify it's in valid range
     }
 
     #[test]
-    fn test_williams_r_next_error() {
-        let mut williams_r = WilliamsR::new(14).unwrap();
-        let candle = Candle {
+    fn test_williams_r_next() {
+        let mut williams_r = WilliamsR::new(3).unwrap();
+
+        // Add initial candles one by one
+        let candle1 = Candle {
             timestamp: 1,
             open: 10.0,
             high: 12.0,
@@ -243,9 +228,58 @@ mod tests {
             close: 11.0,
             volume: 1000.0,
         };
+        let candle2 = Candle {
+            timestamp: 2,
+            open: 11.0,
+            high: 13.0,
+            low: 10.0,
+            close: 12.0,
+            volume: 1000.0,
+        };
 
-        // The next method should return an error as noted in the implementation
-        assert!(williams_r.next(candle).is_err());
+        // First two candles should return None (not enough data)
+        assert_eq!(williams_r.next(candle1).unwrap(), None);
+        assert_eq!(williams_r.next(candle2).unwrap(), None);
+
+        // Third candle should return a value
+        let candle3 = Candle {
+            timestamp: 3,
+            open: 12.0,
+            high: 14.0,
+            low: 11.0,
+            close: 13.0,
+            volume: 1000.0,
+        };
+        let result3 = williams_r.next(candle3).unwrap();
+        assert!(result3.is_some());
+        let r_value3 = result3.unwrap();
+        assert!(r_value3 <= 0.0 && r_value3 >= -100.0);
+
+        // Fourth candle should return a value and maintain sliding window
+        let candle4 = Candle {
+            timestamp: 4,
+            open: 13.0,
+            high: 15.0,
+            low: 12.0,
+            close: 14.0,
+            volume: 1000.0,
+        };
+        let result4 = williams_r.next(candle4).unwrap();
+        assert!(result4.is_some());
+        let r_value4 = result4.unwrap();
+        assert!(r_value4 <= 0.0 && r_value4 >= -100.0);
+
+        // Verify reset clears history
+        williams_r.reset();
+        let candle5 = Candle {
+            timestamp: 5,
+            open: 14.0,
+            high: 16.0,
+            low: 11.0,
+            close: 13.0,
+            volume: 1000.0,
+        };
+        assert_eq!(williams_r.next(candle5).unwrap(), None);
     }
 
     #[test]
