@@ -4,21 +4,24 @@
 //!
 //! ## Features
 //!
-//! - Technical indicators for price analysis
-//! - Support for both price and volume-based indicators
-//! - Customizable parameters for each indicator
+//! - Momentum indicators: Rsi, StochasticOscillator, WilliamsR
+//! - Trend indicators: Ema, Sma
+//! - Volatility indicators: Atr, BollingerBands, KeltnerChannels, Std
+//! - Volume indicators: Adl, Cmf, Obv, Vroc
+//! - Consistent naming and export patterns across all indicators
+//! - Comprehensive documentation and examples
 //! - Error handling for invalid parameters and insufficient data
-//! - Current version: 0.0.1
+//! - Current version: 0.0.2
 //!
 //! ## Quick Start
 //!
 //! ```rust
 //! use rsta::indicators::Indicator;
 //! use rsta::indicators::Candle;
-//! use rsta::indicators::trend::SimpleMovingAverage;
+//! use rsta::indicators::Sma;
 //!
 //! // Create a Simple Moving Average indicator
-//! let mut sma = SimpleMovingAverage::new(5).unwrap();
+//! let mut sma = Sma::new(5).unwrap();
 //!
 //! // Create some price data
 //! let prices = vec![42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0];
@@ -37,11 +40,3 @@ pub mod indicators;
 pub use indicators::Candle;
 pub use indicators::Indicator;
 pub use indicators::IndicatorError;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

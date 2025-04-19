@@ -23,11 +23,14 @@ use super::error::IndicatorError;
 /// Basic usage with a simple moving average:
 ///
 /// ```rust,no_run
-/// use rsta::indicators::trend::SimpleMovingAverage;
+/// use rsta::indicators::Sma;
 /// use rsta::indicators::Indicator;
+/// use rsta::indicators::Candle;
 /// // use of Indicator trait from this module
 /// // Create a 14-period SMA
-/// let mut sma = SimpleMovingAverage::new(14).unwrap();
+/// // Explicitly working with f64 data to avoid ambiguity
+/// let mut sma = Sma::new(14).unwrap();
+/// let _: Vec<f64> = Vec::new(); // Type hint to help compiler
 ///
 /// // Historical price data
 /// let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
@@ -37,7 +40,8 @@ use super::error::IndicatorError;
 /// let sma_values = sma.calculate(&prices).unwrap();
 ///
 /// // Real-time updates
-/// sma.reset();
+/// // Using fully qualified syntax to resolve ambiguity between different Indicator implementations
+/// <Sma as Indicator<f64, f64>>::reset(&mut sma);
 /// for price in prices {
 ///     if let Ok(Some(value)) = sma.next(price) {
 ///         println!("New SMA value: {}", value);
@@ -48,14 +52,14 @@ use super::error::IndicatorError;
 /// Using with a complex indicator like Bollinger Bands:
 ///
 /// ```rust,no_run
-/// use rsta::indicators::volatility::{BollingerBands, BollingerBandsResult};
+/// use rsta::indicators::volatility::BollingerBands;
 /// use rsta::indicators::Indicator;
 /// // use of Indicator trait from this module
 /// // Create Bollinger Bands with 20-period and 2 standard deviations
 /// let mut bb = BollingerBands::new(20, 2.0).unwrap();
 ///
 /// // Historical price data
-/// let prices = vec![/* price data */];
+/// let prices: Vec::<f64> = vec![/* price data */];
 ///
 /// // Batch calculation
 /// let bb_values = bb.calculate(&prices).unwrap();
