@@ -41,6 +41,9 @@
 //! }
 //! ```
 
+pub mod divergence;
+pub use self::divergence::Divergence;
+
 /// A discrete trading event emitted by a [`Signal`].
 ///
 /// `Long` and `Short` indicate an entry direction. `Exit` flags an explicit
