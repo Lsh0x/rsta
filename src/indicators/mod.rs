@@ -115,7 +115,8 @@ pub use self::volatility::{
 
 // Re-export volume indicators
 pub use self::volume::{
-    AccumulationDistributionLine, ChaikinMoneyFlow, OnBalanceVolume, VolumeRateOfChange,
+    AccumulationDistributionLine, ChaikinMoneyFlow, MoneyFlowIndex, OnBalanceVolume,
+    VolumeRateOfChange,
 };
 
 // Short-name aliases for ergonomic use (matching common TA terminology).
@@ -145,6 +146,8 @@ pub type Adx = AverageDirectionalIndex;
 pub type AdxResult = AverageDirectionalIndexResult;
 /// Alias for [`CommodityChannelIndex`].
 pub type Cci = CommodityChannelIndex;
+/// Alias for [`MoneyFlowIndex`].
+pub type Mfi = MoneyFlowIndex;
 
 // Re-export utility functions
 pub use self::utils::{
