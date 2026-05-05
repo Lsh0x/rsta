@@ -33,6 +33,9 @@
 /// Re-exports all indicator modules
 pub mod indicators;
 
+/// Trading signals layer built on top of indicator outputs.
+pub mod signals;
+
 /// CSV import/export utilities (gated behind the `csv` feature).
 #[cfg(feature = "csv")]
 pub mod csv;
