@@ -92,22 +92,23 @@ pub mod utils;
 pub mod volume;
 
 // Re-export core traits and types
-pub use self::candle::Candle;
+pub use self::candle::{heikin_ashi, Candle};
 pub use self::error::IndicatorError;
 pub use self::traits::{Indicator, PriceDataAccessor};
 
 // Re-export momentum indicators
-pub use self::momentum::{Rsi, StochasticOscillator, StochasticResult, WilliamsR};
+pub use self::momentum::{Cci, Rsi, StochasticOscillator, StochasticResult, WilliamsR};
 
 // Re-export volatility indicators
 pub use self::volatility::{
-    Atr, BollingerBands, BollingerBandsResult, KeltnerChannels, KeltnerChannelsResult, Std,
+    Atr, BollingerBands, BollingerBandsResult, Donchian, DonchianResult, KeltnerChannels,
+    KeltnerChannelsResult, Std,
 };
 // Re-export trend indicators
-pub use self::trend::{Ema, Macd, MacdResult, Sma};
+pub use self::trend::{Adx, AdxResult, Dema, Ema, Hma, Macd, MacdResult, Sma, Tema, Wma};
 
 // Re-export volume indicators
-pub use self::volume::{Adl, Cmf, Obv, Vroc};
+pub use self::volume::{Adl, Cmf, Mfi, Obv, Vroc, Vwap};
 
 // Re-export utility functions
 pub use self::utils::{
