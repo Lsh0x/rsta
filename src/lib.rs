@@ -39,6 +39,9 @@ pub mod indicators;
 /// Trading signals layer built on top of indicator outputs.
 pub mod signals;
 
+/// Single-asset backtesting engine.
+pub mod backtest;
+
 /// CSV import/export utilities (gated behind the `csv` feature).
 #[cfg(feature = "csv")]
 pub mod csv;
