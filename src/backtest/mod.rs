@@ -50,6 +50,8 @@
 //! assert!(result.metrics.final_equity > 10_000.0); // bought low, held to high
 //! ```
 
+pub mod sizing;
+
 use crate::indicators::Candle;
 
 // ---------------------------------------------------------------------------
