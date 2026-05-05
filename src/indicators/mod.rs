@@ -109,8 +109,8 @@ pub use self::momentum::{
 
 // Re-export volatility indicators
 pub use self::volatility::{
-    AverageTrueRange, BollingerBands, BollingerBandsResult, KeltnerChannels, KeltnerChannelsResult,
-    StandardDeviation,
+    AverageTrueRange, BollingerBands, BollingerBandsResult, DonchianChannels,
+    DonchianChannelsResult, KeltnerChannels, KeltnerChannelsResult, StandardDeviation,
 };
 
 // Re-export volume indicators
@@ -148,6 +148,8 @@ pub type AdxResult = AverageDirectionalIndexResult;
 pub type Cci = CommodityChannelIndex;
 /// Alias for [`MoneyFlowIndex`].
 pub type Mfi = MoneyFlowIndex;
+/// Alias for [`DonchianChannels`].
+pub type Donchian = DonchianChannels;
 
 // Re-export utility functions
 pub use self::utils::{
