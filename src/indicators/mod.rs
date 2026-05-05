@@ -104,7 +104,7 @@ pub use self::trend::{
 
 // Re-export momentum indicators
 pub use self::momentum::{
-    RelativeStrengthIndex, StochasticOscillator, StochasticResult, WilliamsR,
+    CommodityChannelIndex, RelativeStrengthIndex, StochasticOscillator, StochasticResult, WilliamsR,
 };
 
 // Re-export volatility indicators
@@ -143,6 +143,8 @@ pub type MacdResult = MovingAverageConvergenceDivergenceResult;
 pub type Adx = AverageDirectionalIndex;
 /// Alias for [`AverageDirectionalIndexResult`].
 pub type AdxResult = AverageDirectionalIndexResult;
+/// Alias for [`CommodityChannelIndex`].
+pub type Cci = CommodityChannelIndex;
 
 // Re-export utility functions
 pub use self::utils::{
