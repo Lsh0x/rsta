@@ -97,8 +97,9 @@ pub use self::traits::{Indicator, PriceDataAccessor};
 
 // Re-export trend indicators
 pub use self::trend::{
-    ExponentialMovingAverage, MovingAverageConvergenceDivergence,
-    MovingAverageConvergenceDivergenceResult, SimpleMovingAverage,
+    AverageDirectionalIndex, AverageDirectionalIndexResult, ExponentialMovingAverage,
+    MovingAverageConvergenceDivergence, MovingAverageConvergenceDivergenceResult,
+    SimpleMovingAverage,
 };
 
 // Re-export momentum indicators
@@ -138,6 +139,10 @@ pub type Adl = AccumulationDistributionLine;
 pub type Macd = MovingAverageConvergenceDivergence;
 /// Alias for [`MovingAverageConvergenceDivergenceResult`].
 pub type MacdResult = MovingAverageConvergenceDivergenceResult;
+/// Alias for [`AverageDirectionalIndex`].
+pub type Adx = AverageDirectionalIndex;
+/// Alias for [`AverageDirectionalIndexResult`].
+pub type AdxResult = AverageDirectionalIndexResult;
 
 // Re-export utility functions
 pub use self::utils::{

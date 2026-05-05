@@ -382,6 +382,241 @@ impl Indicator<f64, MovingAverageConvergenceDivergenceResult>
     }
 }
 
+/// Average Directional Index (ADX) result.
+///
+/// Carries the two directional indicators alongside the ADX value so a single
+/// emission gives the full trend-strength picture.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AverageDirectionalIndexResult {
+    /// +DI line — strength of upward movement (0..=100).
+    pub plus_di: f64,
+    /// -DI line — strength of downward movement (0..=100).
+    pub minus_di: f64,
+    /// ADX line — overall trend strength (0..=100, period-smoothed).
+    pub adx: f64,
+}
+
+/// Average Directional Index (ADX) indicator.
+///
+/// Wilder's directional movement system: tracks +DM/-DM and the True Range,
+/// applies Wilder smoothing over `period` bars, then derives:
+///
+/// - `+DI = 100 * +DM_smoothed / ATR_smoothed`
+/// - `-DI = 100 * -DM_smoothed / ATR_smoothed`
+/// - `DX  = 100 * |+DI - -DI| / (+DI + -DI)`
+/// - `ADX = Wilder-smoothed DX over period`
+///
+/// The first ADX value is emitted after `2 * period` candles (one period to
+/// initialise +DI/-DI, then `period` DX values to seed the ADX smoothing).
+///
+/// # Example
+/// ```no_run
+/// use rsta::indicators::trend::AverageDirectionalIndex;
+/// use rsta::indicators::{Indicator, Candle};
+///
+/// let mut adx = AverageDirectionalIndex::new(14).unwrap();
+/// let candles: Vec<Candle> = (0..50)
+///     .map(|i| Candle {
+///         timestamp: i, open: i as f64, high: i as f64 + 2.0,
+///         low: i as f64 - 1.0, close: i as f64 + 1.0, volume: 1000.0,
+///     })
+///     .collect();
+/// let values = adx.calculate(&candles).unwrap();
+/// assert!(!values.is_empty());
+/// ```
+#[derive(Debug)]
+pub struct AverageDirectionalIndex {
+    period: usize,
+    prev_high: Option<f64>,
+    prev_low: Option<f64>,
+    prev_close: Option<f64>,
+    /// Wilder-smoothed +DM, -DM and TR (`None` until period+1 candles seen).
+    smooth_plus_dm: Option<f64>,
+    smooth_minus_dm: Option<f64>,
+    smooth_tr: Option<f64>,
+    /// Buffer of DX values until we have `period` of them to seed ADX.
+    dx_buffer: std::collections::VecDeque<f64>,
+    smooth_adx: Option<f64>,
+    /// Number of candles processed.
+    seen: usize,
+}
+
+impl AverageDirectionalIndex {
+    /// Create a new ADX indicator with the given lookback (typically 14).
+    pub fn new(period: usize) -> Result<Self, IndicatorError> {
+        validate_period(period, 1)?;
+        Ok(Self {
+            period,
+            prev_high: None,
+            prev_low: None,
+            prev_close: None,
+            smooth_plus_dm: None,
+            smooth_minus_dm: None,
+            smooth_tr: None,
+            dx_buffer: std::collections::VecDeque::with_capacity(period),
+            smooth_adx: None,
+            seen: 0,
+        })
+    }
+}
+
+impl Indicator<Candle, AverageDirectionalIndexResult> for AverageDirectionalIndex {
+    fn calculate(
+        &mut self,
+        data: &[Candle],
+    ) -> Result<Vec<AverageDirectionalIndexResult>, IndicatorError> {
+        // First emission appears at the 2*period-th candle: one seed, `period`
+        // samples to fill the smoothing sums, then `period - 1` more DX values
+        // to seed the ADX smoothing.
+        validate_data_length(data, 2 * self.period)?;
+        self.reset();
+        let mut out = Vec::with_capacity(data.len().saturating_sub(2 * self.period - 1));
+        for &candle in data {
+            if let Some(point) = self.next(candle)? {
+                out.push(point);
+            }
+        }
+        Ok(out)
+    }
+
+    fn next(
+        &mut self,
+        value: Candle,
+    ) -> Result<Option<AverageDirectionalIndexResult>, IndicatorError> {
+        self.seen += 1;
+        let (Some(prev_high), Some(prev_low), Some(prev_close)) =
+            (self.prev_high, self.prev_low, self.prev_close)
+        else {
+            // First candle: seed the prev_* state and emit nothing.
+            self.prev_high = Some(value.high);
+            self.prev_low = Some(value.low);
+            self.prev_close = Some(value.close);
+            return Ok(None);
+        };
+
+        // Directional movement.
+        let up_move = value.high - prev_high;
+        let down_move = prev_low - value.low;
+        let plus_dm = if up_move > down_move && up_move > 0.0 {
+            up_move
+        } else {
+            0.0
+        };
+        let minus_dm = if down_move > up_move && down_move > 0.0 {
+            down_move
+        } else {
+            0.0
+        };
+
+        // True Range.
+        let tr = (value.high - value.low)
+            .max((value.high - prev_close).abs())
+            .max((value.low - prev_close).abs());
+
+        // Update state for next call.
+        self.prev_high = Some(value.high);
+        self.prev_low = Some(value.low);
+        self.prev_close = Some(value.close);
+
+        let n = self.period as f64;
+        // `samples` = number of completed directional movement pairs
+        // (the very first candle is a seed, contributing nothing).
+        let samples = self.seen - 1;
+        if samples == 1 {
+            self.smooth_plus_dm = Some(plus_dm);
+            self.smooth_minus_dm = Some(minus_dm);
+            self.smooth_tr = Some(tr);
+        } else {
+            let prev_p = self.smooth_plus_dm.unwrap();
+            let prev_m = self.smooth_minus_dm.unwrap();
+            let prev_t = self.smooth_tr.unwrap();
+            if samples <= self.period {
+                // Wilder seeds the smoothed values with raw sums over the
+                // first `period` directional samples.
+                self.smooth_plus_dm = Some(prev_p + plus_dm);
+                self.smooth_minus_dm = Some(prev_m + minus_dm);
+                self.smooth_tr = Some(prev_t + tr);
+            } else {
+                // Wilder smoothing: x_new = x_prev - x_prev / n + raw.
+                self.smooth_plus_dm = Some(prev_p - prev_p / n + plus_dm);
+                self.smooth_minus_dm = Some(prev_m - prev_m / n + minus_dm);
+                self.smooth_tr = Some(prev_t - prev_t / n + tr);
+            }
+        }
+
+        if samples < self.period {
+            return Ok(None);
+        }
+
+        let p = self.smooth_plus_dm.unwrap();
+        let m = self.smooth_minus_dm.unwrap();
+        let t = self.smooth_tr.unwrap();
+        if t == 0.0 {
+            // Pathological flat market: emit zeros to avoid division blow-up.
+            return Ok(Some(AverageDirectionalIndexResult {
+                plus_di: 0.0,
+                minus_di: 0.0,
+                adx: 0.0,
+            }));
+        }
+
+        let plus_di = 100.0 * p / t;
+        let minus_di = 100.0 * m / t;
+        let denom = plus_di + minus_di;
+        let dx = if denom == 0.0 {
+            0.0
+        } else {
+            100.0 * (plus_di - minus_di).abs() / denom
+        };
+
+        // Seed and update ADX.
+        match self.smooth_adx {
+            None => {
+                self.dx_buffer.push_back(dx);
+                if self.dx_buffer.len() < self.period {
+                    return Ok(None);
+                }
+                let seed = self.dx_buffer.iter().sum::<f64>() / n;
+                self.smooth_adx = Some(seed);
+                Ok(Some(AverageDirectionalIndexResult {
+                    plus_di,
+                    minus_di,
+                    adx: seed,
+                }))
+            }
+            Some(prev_adx) => {
+                let new_adx = (prev_adx * (n - 1.0) + dx) / n;
+                self.smooth_adx = Some(new_adx);
+                Ok(Some(AverageDirectionalIndexResult {
+                    plus_di,
+                    minus_di,
+                    adx: new_adx,
+                }))
+            }
+        }
+    }
+
+    fn reset(&mut self) {
+        self.prev_high = None;
+        self.prev_low = None;
+        self.prev_close = None;
+        self.smooth_plus_dm = None;
+        self.smooth_minus_dm = None;
+        self.smooth_tr = None;
+        self.dx_buffer.clear();
+        self.smooth_adx = None;
+        self.seen = 0;
+    }
+
+    fn name(&self) -> &'static str {
+        "ADX"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -548,5 +783,77 @@ mod tests {
         for v in &out {
             assert!((v.histogram - (v.macd - v.signal)).abs() < 1e-12);
         }
+    }
+
+    fn make_candles(count: usize, trend: f64) -> Vec<Candle> {
+        (0..count)
+            .map(|i| {
+                let mid = i as f64 * trend;
+                Candle {
+                    timestamp: i as u64,
+                    open: mid,
+                    high: mid + 1.5,
+                    low: mid - 1.5,
+                    close: mid + 0.5,
+                    volume: 1000.0,
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_adx_construction_validates_period() {
+        assert!(AverageDirectionalIndex::new(0).is_err());
+        assert!(AverageDirectionalIndex::new(14).is_ok());
+    }
+
+    #[test]
+    fn test_adx_emits_after_warmup() {
+        let period = 3;
+        let mut adx = AverageDirectionalIndex::new(period).unwrap();
+        let candles = make_candles(20, 1.0);
+        let mut emissions = 0;
+        for c in &candles {
+            if adx.next(*c).unwrap().is_some() {
+                emissions += 1;
+            }
+        }
+        // First ADX appears at the 2*period-th candle (one seed + `period`
+        // directional samples to seed sums + `period - 1` DX values to seed
+        // the ADX smoothing → emission at candle index 2*period - 1).
+        assert_eq!(emissions, candles.len() - (2 * period - 1));
+    }
+
+    #[test]
+    fn test_adx_strong_uptrend_high_di_diff() {
+        // A clean uptrend should give +DI >> -DI and a high ADX.
+        let mut adx = AverageDirectionalIndex::new(7).unwrap();
+        let out = adx.calculate(&make_candles(40, 1.0)).unwrap();
+        let last = out.last().expect("at least one emission");
+        assert!(
+            last.plus_di > last.minus_di,
+            "+DI {} should exceed -DI {}",
+            last.plus_di,
+            last.minus_di,
+        );
+        assert!(
+            last.adx > 50.0,
+            "uptrend ADX should be high, got {}",
+            last.adx
+        );
+    }
+
+    #[test]
+    fn test_adx_calculate_matches_streaming() {
+        let candles = make_candles(50, 1.0);
+        let mut batch = AverageDirectionalIndex::new(14).unwrap();
+        let batch_out = batch.calculate(&candles).unwrap();
+
+        let mut stream = AverageDirectionalIndex::new(14).unwrap();
+        let stream_out: Vec<_> = candles
+            .iter()
+            .filter_map(|c| stream.next(*c).unwrap())
+            .collect();
+        assert_eq!(batch_out, stream_out);
     }
 }
