@@ -1,318 +1,220 @@
-# RSTA - Rust Statistical Technical Analysis
+# rsta
 
-A comprehensive Rust library for financial technical analysis indicators, providing efficient and type-safe implementations of popular indicators used in financial markets.
+Rust Statistical Technical Analysis — a focused, well-tested toolkit for
+trend, momentum, volume, and volatility indicators, plus a streaming
+signals layer and a single-asset backtesting engine.
 
-[![GitHub last commit](https://img.shields.io/github/last-commit/lsh0x/rsta)](https://github.com/lsh0x/rsta/commits/main)
 [![CI](https://github.com/lsh0x/rsta/workflows/CI/badge.svg)](https://github.com/lsh0x/rsta/actions)
 [![Codecov](https://codecov.io/gh/lsh0x/rsta/branch/main/graph/badge.svg)](https://codecov.io/gh/lsh0x/rsta)
-[![Docs](https://docs.rs/rsta/badge.svg)](https://docs.rs/rsta)
 [![Crates.io](https://img.shields.io/crates/v/rsta.svg)](https://crates.io/crates/rsta)
-[![crates.io](https://img.shields.io/crates/d/rsta)](https://crates.io/crates/rsta)
+[![Docs](https://docs.rs/rsta/badge.svg)](https://docs.rs/rsta)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Overview
+## At a glance
 
-RSTA provides robust implementations of technical indicators used for analyzing financial markets and making trading decisions. The library is designed with a focus on performance, type safety, and ease of use.
+```rust
+use rsta::backtest::{Action, BacktestConfig, Backtester, Context, Quantity, Strategy};
+use rsta::indicators::trend::Sma;
+use rsta::indicators::{Candle, Indicator};
+use rsta::signals::{CrossDown, CrossUp, Signal, SignalEvent};
 
-### Features
+struct Crossover { fast: Sma, slow: Sma, up: CrossUp, down: CrossDown }
 
-- **Comprehensive Indicator Support**: Includes trend, momentum, volume, and volatility indicators
-- **Type-Safe API**: Leverages Rust's type system to provide a safe API
-- **Performance Optimized**: Efficient algorithms suitable for large datasets
-- **Flexible Data Input**: Works with both simple price data and OHLCV (Open, High, Low, Close, Volume) candles
-- **Real-time Updates**: Support for both batch calculations and real-time updates
-- **Well Documented**: Extensive documentation and examples
+impl Strategy for Crossover {
+    fn on_candle(&mut self, c: &Candle, _ctx: &Context) -> Action {
+        let f = <Sma as Indicator<f64, f64>>::next(&mut self.fast, c.close).unwrap();
+        let s = <Sma as Indicator<f64, f64>>::next(&mut self.slow, c.close).unwrap();
+        let (Some(f), Some(s)) = (f, s) else { return Action::Hold };
+        match (self.up.next((f, s)), self.down.next((f, s))) {
+            (Some(SignalEvent::Long), _)  => Action::EnterLong(Quantity::AllCash),
+            (_, Some(SignalEvent::Short)) => Action::Exit,
+            _ => Action::Hold,
+        }
+    }
+}
+
+let candles: Vec<Candle> = /* … */ vec![];
+let bt = Backtester::new(BacktestConfig::default());
+let mut strat = Crossover {
+    fast: Sma::new(20).unwrap(),
+    slow: Sma::new(50).unwrap(),
+    up: CrossUp::new(),
+    down: CrossDown::new(),
+};
+let result = bt.run(&candles, &mut strat);
+println!("return = {:.2}%", result.metrics.total_return * 100.0);
+```
+
+A runnable version of this on 12 years of real Kraken BTC/USD daily data
+ships as `cargo run --release --example sma_crossover_backtest`.
+
+## What's in the box
+
+### 26 indicators
+
+| Family | Indicators |
+|---|---|
+| **Trend** | `Sma`, `Ema`, `Wma`, `Dema`, `Tema`, `Hma`, `Macd` (+`MacdResult`), `Adx` (+`AdxResult`), `Sar`, `Ichimoku` (+`IchimokuResult`), `pivot_classic`/`pivot_fibonacci`/`pivot_camarilla` (+`PivotResult`) |
+| **Momentum** | `Rsi`, `StochasticOscillator` (+`StochasticResult`), `WilliamsR`, `Cci` |
+| **Volatility** | `Atr`, `BollingerBands` (+`BollingerBandsResult`), `KeltnerChannels` (+`KeltnerChannelsResult`), `Std`, `Donchian` (+`DonchianResult`) |
+| **Volume** | `Obv`, `Vroc`, `Adl`, `Cmf`, `Mfi`, `Vwap` |
+| **Transforms** | `heikin_ashi(&[Candle]) -> Vec<Candle>` |
+
+Every indicator implements the `Indicator<T, O>` trait with both
+`calculate(&[T])` (batch) and `next(T)` (streaming) — the two paths
+produce identical values bar-for-bar. Close-priced indicators also
+accept `&[Candle]` directly; multi-output indicators emit a typed
+struct so consumers don't need to remember column orders.
+
+### Signals layer
+
+`signals::{Signal, SignalEvent}` turns indicator outputs into discrete
+trading events:
+
+- `CrossUp` / `CrossDown` — two-series crossovers (fast MA vs slow MA, …)
+- `ThresholdAbove` / `ThresholdBelow` — value crossing a fixed level
+  (RSI breaching 70 / 30, …)
+- `Breakout` — value escaping a `(value, upper, lower)` channel (drive
+  from `Donchian`)
+- `Divergence` — bullish/bearish divergences between price and an oscillator
+- `SignalExt::and` / `or` / `not` combinators for composing signals
+
+### Backtesting engine
+
+`backtest::Backtester` runs a `Strategy` against a `&[Candle]` slice
+with configurable proportional fees and slippage. Single asset, single
+position; long, short, or flat. Tracks cash, position MTM, full trade
+log, per-bar equity curve. Reports total return, max drawdown,
+annualised Sharpe, win rate, and profit factor.
+
+### CSV import/export *(opt-in via the `csv` feature)*
+
+```toml
+rsta = { version = "0.1", features = ["csv"] }
+```
+
+`csv::CsvFormatter` loads OHLCV from a CSV, runs an arbitrary set of
+registered indicators, and writes an enriched CSV with one column per
+indicator.
 
 ## Installation
 
-Add RSTA to your `Cargo.toml`:
+```toml
+[dependencies]
+rsta = "0.1"
+```
+
+Optional: enable the CSV pipeline.
 
 ```toml
 [dependencies]
-rsta = "0.0.2"
+rsta = { version = "0.1", features = ["csv"] }
 ```
 
-## API Reference
+MSRV is **1.82** (`std::iter::repeat_n`). The crate compiles cleanly
+under stable, beta, and nightly on Linux, macOS, and Windows.
 
-For complete API documentation, please visit [docs.rs/rsta](https://docs.rs/rsta).
+## Verifying correctness
 
-Key components:
+The crate ships golden CSVs generated by [pandas-ta] against 12 years
+of real Kraken XBTUSD daily OHLCV (`tests/data/btc_usd_daily.csv`,
+~4.5k bars from 2013-10-06 to 2026-04-21). The integration tests in
+`tests/golden_indicators.rs` compare rsta's outputs against this
+reference at tight tolerance (`1e-6` for SMA/EMA/ATR/MACD, `1e-2` for
+RSI past warmup, where Wilder seed conventions diverge). To regenerate:
 
-- **Core Traits**:
-  - `Indicator<T, O>`: Common interface for all indicators
-  - `PriceDataAccessor<T>`: Uniform access to price data
-
-- **Data Types**:
-  - `Candle`: OHLCV price data structure
-  - `IndicatorError`: Error types for indicator operations
-
-- **Indicator Categories**:
-  - **Trend Indicators**:
-    - Simple Moving Average (SMA)
-    - Exponential Moving Average (EMA)
-    - Moving Average Convergence Divergence (MACD)
-  - **Momentum Indicators**:
-    - Relative Strength Index (RSI)
-    - Stochastic Oscillator
-    - Williams %R
-
-  - **Volume Indicators**:
-    - On Balance Volume (OBV)
-    - Chaikin Money Flow (CMF)
-    - Accumulation/Distribution Line (ADL)
-    - Volume Rate of Change (VROC)
-
-  - **Volatility Indicators**:
-    - Standard Deviation (STD)
-    - Average True Range (ATR)
-    - Bollinger Bands (BB)
-    - Keltner Channels
-
-## Quick Start
-
-Here's a simple example calculating a Simple Moving Average (SMA):
-
-```rust
-use rsta::indicators::trend::Sma;
-use rsta::indicators::Indicator;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Price data
-    let prices = vec![10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0];
-
-    // Create a 5-period SMA
-    let mut sma = Sma::new(5)?;
-
-    // Calculate SMA values
-    let sma_values = sma.calculate(&prices)?;
-
-    println!("SMA values: {:?}", sma_values);
-    Ok(())
-}
+```bash
+pip install pandas pandas-ta
+python scripts/gen_golden.py
 ```
 
-## Indicator Categories
+This is the layer that catches subtle bugs cross-implementation —
+during 0.0.3 it surfaced a real internal inconsistency in `Ema` that
+synthetic tests had missed.
 
-RSTA organizes indicators into four main categories:
+## Examples
 
-### Trend Indicators
+```bash
+# End-to-end: indicators → signals → backtest → metrics on real BTC daily
+cargo run --release --example sma_crossover_backtest
 
-Track the direction of price movements over time.
+# Streaming indicator usage with RSI threshold signals
+cargo run --release --example realtime_streaming
 
-```rust
-use rsta::indicators::trend::Sma;
-use rsta::indicators::Indicator;
-
-// Create a 14-period SMA
-let mut sma = Sma::new(14)?;
-let prices = vec![/* your price data */];
-let sma_values = sma.calculate(&prices)?;
+# Enrich a CSV with indicator columns (csv feature required)
+cargo run --release --features csv --example csv_to_indicators -- input.csv output.csv
 ```
 
-Available trend indicators:
-- Simple Moving Average (SMA)
-- Exponential Moving Average (EMA)
-- Moving Average Convergence Divergence (MACD)
+## Benchmarks
 
-### Momentum Indicators
+Microbenchmarks via [criterion]:
 
-Measure the rate of price changes to identify overbought or oversold conditions.
-
-```rust
-use rsta::indicators::momentum::Rsi;
-use rsta::indicators::Indicator;
-
-// Create a 14-period RSI
-let mut rsi = Rsi::new(14)?;
-let prices = vec![/* your price data */];
-let rsi_values = rsi.calculate(&prices)?;
+```bash
+cargo bench --bench indicators        # 11 indicators × 100k synthetic bars
+cargo bench --bench backtest          # SMA crossover on BTC daily + 1M-bar synthetic
 ```
 
-Available momentum indicators:
-- Relative Strength Index (RSI)
-- Williams %R
-- Stochastic Oscillator
+On a 2024 M-class laptop (release, single thread):
 
-### Volume Indicators
+| Indicator | 100k bars | elem/s |
+|---|---|---|
+| `Sma(20)` | ~144 µs | ~690 M |
+| `Ema(20)` | ~155 µs | ~640 M |
+| `Rsi(14)` | ~620 µs | ~160 M |
+| `BollingerBands(20)` | ~3.0 ms | ~33 M |
 
-Analyze trading volume to confirm price movements.
+Run `cargo bench` locally for your hardware's numbers.
 
-```rust
-use rsta::indicators::volume::Obv;
-use rsta::indicators::Indicator;
-use rsta::indicators::Candle;
+## Comparison
 
-// Create price data with OHLCV values
-let candles = vec![
-    Candle {
-        timestamp: 1618185600,
-        open: 100.0, high: 105.0, low: 99.0, close: 103.0, volume: 1000.0
-    },
-    Candle {
-        timestamp: 1618272000,
-        open: 103.0, high: 106.0, low: 102.0, close: 105.0, volume: 1200.0
-    },
-    // More candles...
-];
+|  | rsta | [`ta-rs`] | [`pandas-ta`] |
+|---|---|---|---|
+| Language | Rust | Rust | Python |
+| Indicators | 26 | ~25 | 130+ |
+| Streaming API (`next()` per bar) | yes | yes | no |
+| Signals layer (Cross / Threshold / Breakout / Divergence + combinators) | **yes** | no | partial |
+| Backtest engine | **yes** (single-asset) | no | no |
+| Golden tests vs pandas-ta on real data | **yes** | no | n/a |
+| Generic over numeric type | not yet ([#26](https://github.com/Lsh0x/rsta/issues/26)) | no | n/a |
 
-// Create and calculate OBV
-let mut obv = Obv::new()?;
-let obv_values = obv.calculate(&candles)?;
-```
+[`ta-rs`]: https://github.com/greyblake/ta-rs
+[`pandas-ta`]: https://github.com/twopirllc/pandas-ta
+[criterion]: https://github.com/bheisler/criterion.rs
+[pandas-ta]: https://github.com/twopirllc/pandas-ta
 
-Available volume indicators:
-- On Balance Volume (OBV)
-- Chaikin Money Flow (CMF)
-- Accumulation/Distribution Line (ADL)
-- Volume Rate of Change (VROC)
+## Stability
 
-### Volatility Indicators
+This is the first `0.1.x` release. The API is usable and well-tested,
+but reserves the right to evolve before `1.0`:
 
-Measure market volatility and price dispersion.
+- Indicator constructors and their result types are unlikely to move.
+- The `Indicator` / `Signal` traits may grow optional methods (with
+  defaults) but are expected to stay source-compatible.
+- Backtester semantics (single-asset, exec-at-close) are intentionally
+  scoped — multi-asset and tick-precision will be opt-in additions.
 
-```rust
-use rsta::indicators::volatility::Std;
-use rsta::indicators::Indicator;
-
-// Create a 20-period Standard Deviation indicator
-let mut std_dev = Std::new(20)?;
-let prices = vec![/* your price data */];
-let std_values = std_dev.calculate(&prices)?;
-
-// Standard Deviation values
-for value in std_values {
-    println!("Standard Deviation: {}", value);
-    
-    // Check if volatility is high
-    if value > 2.0 {
-        println!("High volatility detected!");
-    }
-}
-```
-
-Available volatility indicators:
-- Standard Deviation (STD)
-- Average True Range (ATR)
-- Bollinger Bands (BB)
-- Keltner Channels
-
-## Usage Patterns and Best Practices
-
-### Batch vs. Real-time Calculation
-
-RSTA supports both batch calculation for historical data and real-time updates:
-
-```rust
-use rsta::indicators::trend::Sma;
-use rsta::indicators::Indicator;
-
-// Create indicator
-let mut sma = Sma::new(14)?;
-
-// Batch calculation
-let historical_prices = vec![/* historical data */];
-let historical_sma = sma.calculate(&historical_prices)?;
-
-// Reset state for real-time updates
-sma.reset();
-
-// Real-time updates
-let new_price = 105.0;
-if let Some(new_sma) = sma.next(new_price)? {
-    println!("New SMA: {}", new_sma);
-}
-```
-
-### Working with OHLCV Data
-
-Some indicators require full OHLCV data using the `Candle` struct:
-
-```rust
-use rsta::indicators::Candle;
-
-// Create a candle with OHLCV data
-let candle = Candle {
-    timestamp: 1618185600, // Unix timestamp
-    open: 100.0,
-    high: 105.0,
-    low: 98.0,
-    close: 103.0,
-    volume: 1500.0,
-};
-```
-
-### Combining Indicators for Trading Strategies
-
-Many trading strategies use multiple indicators together. Once more indicators are implemented, 
-you can combine them for complex trading strategies.
-
-```rust
-use rsta::indicators::trend::Sma;
-use rsta::indicators::volatility::Std;
-use rsta::indicators::Indicator;
-
-// Create indicators
-let mut sma = Sma::new(20)?;
-let mut std_dev = Std::new(20)?;
-
-// Calculate indicators
-let prices = vec![/* price data */];
-let sma_values = sma.calculate(&prices)?;
-let std_values = std_dev.calculate(&prices)?;
-
-// Analyze results (simple example)
-for i in 0..sma_values.len().min(std_values.len()) {
-    let price_idx = prices.len() - sma_values.len() + i;
-    let current_price = prices[price_idx];
-    
-    // Simple volatility-based strategy
-    if current_price > sma_values[i] && std_values[i] < 1.0 {
-        println!("Low volatility uptrend at index {}", price_idx);
-    } else if current_price < sma_values[i] && std_values[i] > 2.0 {
-        println!("High volatility downtrend at index {}", price_idx);
-    }
-}
-```
-
-### Error Handling
-
-All methods that might fail return a `Result` with detailed error information:
-
-```rust
-use rsta::indicators::trend::Sma;
-use rsta::indicators::IndicatorError;
-
-// Handle errors explicitly
-match Sma::new(0) {
-    Ok(sma) => {
-        // Use the SMA
-    },
-    Err(IndicatorError::InvalidParameter(msg)) => {
-        eprintln!("Invalid parameter: {}", msg);
-    },
-    Err(e) => {
-        eprintln!("Other error: {}", e);
-    }
-}
-```
+Open issues track known direction, including [generic numeric
+support](https://github.com/Lsh0x/rsta/issues/26).
 
 ## Contributing
 
-Contributions are welcome! Here's how you can help:
+PRs welcome. New indicators should:
 
-1. **Add New Indicators**: Implement additional technical indicators
-2. **Improve Performance**: Optimize existing implementations
-3. **Add Tests**: Increase test coverage and add test cases
-4. **Enhance Documentation**: Improve examples and usage documentation
-5. **Report Issues**: Report bugs or suggest features
+1. Live in their own file under `src/indicators/<family>/<name>.rs`.
+2. Implement `Indicator<T, O>` for whichever input type makes sense
+   (`Indicator<f64, f64>` for close-priced, `Indicator<Candle, _>` for
+   OHLCV-based).
+3. Provide a `reset_state()` inherent method that the trait `reset()`
+   delegates to.
+4. Override `name()` and `period()` on the trait when applicable.
+5. Include unit tests covering construction validation, warmup, and
+   batch-vs-streaming parity.
+6. If practical, add a pandas-ta golden in `scripts/gen_golden.py` and
+   a comparison test in `tests/golden_indicators.rs`.
 
-Please follow these steps to contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-new-indicator`)
-3. Commit your changes (`git commit -am 'Add a new indicator'`)
-4. Push to the branch (`git push origin feature/my-new-indicator`)
-5. Create a new Pull Request
+`cargo fmt`, `cargo clippy --all-features --all-targets -- -D warnings`,
+and `cargo test --all-features` all need to be green before review.
 
 ## License
 
-This project is licensed under the GPL-3.0 License - see the LICENSE file for details.
+MIT. See [LICENSE](LICENSE).

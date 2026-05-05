@@ -1,10 +1,24 @@
 [package]
 name = "rsta"
-version = "0.0.3"
+version = "0.1.0"
 authors = ["LSH <github@lsh.tech>"]
 edition = "2021"
-description = "Rust Statistical Technical Analysis (RSTA) - A library for financial technical analysis indicators"
-license = "GPL-3.0"
+rust-version = "1.82"
+description = "Technical analysis indicators, streaming signals, and a single-asset backtesting engine for Rust"
+license = "MIT"
+repository = "https://github.com/Lsh0x/rsta"
+documentation = "https://docs.rs/rsta"
+readme = "README.md"
+keywords = ["finance", "trading", "indicators", "backtest", "ta"]
+categories = ["finance", "algorithms"]
+exclude = [
+    "tests/data/btc_usd_daily.csv",
+    "tests/data/golden_*.csv",
+    "scripts/",
+    "pr_extractor.sh",
+    "pr_info/",
+    "docs/roadmap/",
+]
 
 [features]
 default = []
