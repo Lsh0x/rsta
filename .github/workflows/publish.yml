@@ -1,0 +1,30 @@
+name: Publish to crates.io
+
+# Only fires when a `vX.Y.Z` tag is pushed, or when manually triggered from
+# the Actions tab. Crucially this does *not* run on every merge to main —
+# the previous `doc.yml` workflow did, which silently auto-published every
+# release-train commit.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: cargo publish
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Verify packaging (dry run)
+        run: cargo publish --all-features --dry-run
+
+      - name: Publish
+        run: cargo publish --all-features --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
