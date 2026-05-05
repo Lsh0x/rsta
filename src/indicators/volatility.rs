@@ -164,6 +164,14 @@ impl Indicator<Candle, f64> for AverageTrueRange {
         self.current_atr = None;
         self.tr_buffer.clear();
     }
+
+    fn name(&self) -> &'static str {
+        "ATR"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
 }
 
 /// Standard Deviation indicator
@@ -274,6 +282,27 @@ impl Indicator<f64, f64> for StandardDeviation {
     fn reset(&mut self) {
         self.values.clear();
         self.mean = None;
+    }
+
+    fn name(&self) -> &'static str {
+        "StdDev"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
+}
+
+impl StandardDeviation {
+    /// Convenience: feed candles by extracting the close price.
+    pub fn calculate_candles(&mut self, candles: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        <Self as Indicator<f64, f64>>::calculate(self, &closes)
+    }
+
+    /// Convenience: streaming update with the close price of a candle.
+    pub fn next_candle(&mut self, candle: Candle) -> Result<Option<f64>, IndicatorError> {
+        <Self as Indicator<f64, f64>>::next(self, candle.close)
     }
 }
 
@@ -426,7 +455,35 @@ impl Indicator<f64, BollingerBandsResult> for BollingerBands {
         self.values.clear();
         self.sma = None;
     }
+
+    fn name(&self) -> &'static str {
+        "BollingerBands"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
 }
+
+impl BollingerBands {
+    /// Convenience: feed candles by extracting the close price.
+    pub fn calculate_candles(
+        &mut self,
+        candles: &[Candle],
+    ) -> Result<Vec<BollingerBandsResult>, IndicatorError> {
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        <Self as Indicator<f64, BollingerBandsResult>>::calculate(self, &closes)
+    }
+
+    /// Convenience: streaming update with the close price of a candle.
+    pub fn next_candle(
+        &mut self,
+        candle: Candle,
+    ) -> Result<Option<BollingerBandsResult>, IndicatorError> {
+        <Self as Indicator<f64, BollingerBandsResult>>::next(self, candle.close)
+    }
+}
+
 /// Keltner Channels indicator result
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct KeltnerChannelsResult {
@@ -680,6 +737,10 @@ impl Indicator<Candle, KeltnerChannelsResult> for KeltnerChannels {
         self.candle_buffer.clear();
         self.current_ema = None;
         self.current_atr = None;
+    }
+
+    fn name(&self) -> &'static str {
+        "KeltnerChannels"
     }
 }
 

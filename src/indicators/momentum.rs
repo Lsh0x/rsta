@@ -182,6 +182,27 @@ impl Indicator<f64, f64> for RelativeStrengthIndex {
         self.avg_gain = None;
         self.avg_loss = None;
     }
+
+    fn name(&self) -> &'static str {
+        "RSI"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
+}
+
+impl RelativeStrengthIndex {
+    /// Convenience: feed candles by extracting the close price.
+    pub fn calculate_candles(&mut self, candles: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        <Self as Indicator<f64, f64>>::calculate(self, &closes)
+    }
+
+    /// Convenience: streaming update with the close price of a candle.
+    pub fn next_candle(&mut self, candle: Candle) -> Result<Option<f64>, IndicatorError> {
+        <Self as Indicator<f64, f64>>::next(self, candle.close)
+    }
 }
 
 /// Stochastic Oscillator
@@ -371,6 +392,10 @@ impl Indicator<Candle, StochasticResult> for StochasticOscillator {
     fn reset(&mut self) {
         self.k_buffer.clear();
     }
+
+    fn name(&self) -> &'static str {
+        "Stochastic"
+    }
 }
 
 /// Williams %R
@@ -522,6 +547,14 @@ impl Indicator<Candle, f64> for WilliamsR {
 
     fn reset(&mut self) {
         // No state to reset in this basic implementation
+    }
+
+    fn name(&self) -> &'static str {
+        "Williams%R"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
     }
 }
 

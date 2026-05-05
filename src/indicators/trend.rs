@@ -3,7 +3,7 @@
 //! This module contains trend following indicators like Moving Averages, MACD, and Bollinger Bands.
 
 use crate::indicators::utils::{calculate_ema, calculate_sma, validate_period};
-use crate::indicators::{Indicator, IndicatorError};
+use crate::indicators::{Candle, Indicator, IndicatorError};
 use std::collections::VecDeque;
 
 /// Simple Moving Average (SMA) indicator
@@ -76,6 +76,27 @@ impl Indicator<f64, f64> for SimpleMovingAverage {
     fn reset(&mut self) {
         self.buffer.clear();
         self.sum = 0.0;
+    }
+
+    fn name(&self) -> &'static str {
+        "SMA"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
+}
+
+impl SimpleMovingAverage {
+    /// Convenience: feed candles by extracting the close price.
+    pub fn calculate_candles(&mut self, candles: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        <Self as Indicator<f64, f64>>::calculate(self, &closes)
+    }
+
+    /// Convenience: streaming update with the close price of a candle.
+    pub fn next_candle(&mut self, candle: Candle) -> Result<Option<f64>, IndicatorError> {
+        <Self as Indicator<f64, f64>>::next(self, candle.close)
     }
 }
 
@@ -154,6 +175,27 @@ impl Indicator<f64, f64> for ExponentialMovingAverage {
 
     fn reset(&mut self) {
         self.current_ema = None;
+    }
+
+    fn name(&self) -> &'static str {
+        "EMA"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
+}
+
+impl ExponentialMovingAverage {
+    /// Convenience: feed candles by extracting the close price.
+    pub fn calculate_candles(&mut self, candles: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        <Self as Indicator<f64, f64>>::calculate(self, &closes)
+    }
+
+    /// Convenience: streaming update with the close price of a candle.
+    pub fn next_candle(&mut self, candle: Candle) -> Result<Option<f64>, IndicatorError> {
+        <Self as Indicator<f64, f64>>::next(self, candle.close)
     }
 }
 

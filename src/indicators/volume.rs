@@ -119,6 +119,10 @@ impl Indicator<Candle, f64> for OnBalanceVolume {
         self.prev_close = None;
         self.current_obv = 0.0;
     }
+
+    fn name(&self) -> &'static str {
+        "OBV"
+    }
 }
 
 /// Volume Rate of Change indicator
@@ -297,6 +301,14 @@ impl Indicator<Candle, f64> for VolumeRateOfChange {
     fn reset(&mut self) {
         self.volume_buffer.clear();
     }
+
+    fn name(&self) -> &'static str {
+        "VROC"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
 }
 
 /// Accumulation/Distribution Line (A/D Line) indicator
@@ -416,6 +428,10 @@ impl Indicator<Candle, f64> for AccumulationDistributionLine {
 
     fn reset(&mut self) {
         self.current_ad = 0.0;
+    }
+
+    fn name(&self) -> &'static str {
+        "ADL"
     }
 }
 
@@ -619,6 +635,14 @@ impl Indicator<Candle, f64> for ChaikinMoneyFlow {
     fn reset(&mut self) {
         self.mfv_buffer.clear();
         self.volume_buffer.clear();
+    }
+
+    fn name(&self) -> &'static str {
+        "CMF"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
     }
 }
 

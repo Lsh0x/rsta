@@ -104,6 +104,25 @@ pub trait Indicator<T, O> {
     /// initial state as if newly created. This is useful when reusing the same indicator
     /// instance with different datasets.
     fn reset(&mut self);
+
+    /// Human-readable indicator name (e.g. `"SMA"`, `"RSI"`, `"BollingerBands"`).
+    ///
+    /// Used for diagnostics, logging, and CSV export column naming. Defaults to a
+    /// best-effort `std::any::type_name` fragment so existing indicators don't
+    /// have to override it, but each indicator should provide a stable name.
+    fn name(&self) -> &'static str {
+        let full = std::any::type_name::<Self>();
+        full.rsplit("::").next().unwrap_or(full)
+    }
+
+    /// Lookback period of the indicator, if it is a single integer parameter.
+    ///
+    /// Returns `None` for indicators that have no period (e.g. OBV) or that take
+    /// multiple periods (e.g. MACD, Stochastic). This is informational — used for
+    /// pretty-printing and tooling, never for calculation.
+    fn period(&self) -> Option<usize> {
+        None
+    }
 }
 
 /// Price data accessor trait
