@@ -105,7 +105,10 @@ pub use self::volatility::{
     KeltnerChannelsResult, Std,
 };
 // Re-export trend indicators
-pub use self::trend::{Adx, AdxResult, Dema, Ema, Hma, Macd, MacdResult, Sma, Tema, Wma};
+pub use self::trend::{
+    pivot_camarilla, pivot_classic, pivot_fibonacci, Adx, AdxResult, Dema, Ema, Hma, Ichimoku,
+    IchimokuResult, Macd, MacdResult, PivotResult, Sar, Sma, Tema, Wma,
+};
 
 // Re-export volume indicators
 pub use self::volume::{Adl, Cmf, Mfi, Obv, Vroc, Vwap};
