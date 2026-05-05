@@ -143,55 +143,23 @@ impl Macd {
 // Implementation for raw price values
 impl Indicator<f64, MacdResult> for Macd {
     fn calculate(&mut self, data: &[f64]) -> Result<Vec<MacdResult>, IndicatorError> {
-        if data.len() < self.slow_period + self.signal_period - 1 {
+        if data.is_empty() {
             return Err(IndicatorError::InsufficientData(format!(
-                "At least {} data points required for MACD({},{},{})",
-                self.slow_period + self.signal_period - 1,
-                self.fast_period,
-                self.slow_period,
-                self.signal_period
+                "At least 1 data point required for MACD({},{},{})",
+                self.fast_period, self.slow_period, self.signal_period,
             )));
         }
-
-        // Calculate EMAs
-        let fast_ema_values = self.fast_ema.calculate(data)?;
-        let slow_ema_values = self.slow_ema.calculate(data)?;
-
-        // Calculate MACD line values (fast EMA - slow EMA)
-        let mut macd_line = Vec::new();
-
-        // The MACD line starts at the index where both fast and slow EMAs are available
-        let start_idx = self.slow_period - 1;
-        for i in start_idx..data.len() {
-            let fast_idx = i - (self.slow_period - self.fast_period);
-            macd_line.push(fast_ema_values[fast_idx] - slow_ema_values[i - start_idx]);
+        // Stream through `next` to guarantee that batch and streaming paths
+        // produce identical values (one MacdResult per input bar — the first
+        // `slow_period - 1` values are warmup-tainted but emitted for parity
+        // with `pandas.ewm(adjust=False)`).
+        self.reset_state();
+        let mut result = Vec::with_capacity(data.len());
+        for &v in data {
+            if let Some(r) = <Self as Indicator<f64, MacdResult>>::next(self, v)? {
+                result.push(r);
+            }
         }
-
-        // Calculate signal line (EMA of MACD line)
-        let signal_values = self.signal_ema.calculate(&macd_line)?;
-
-        // Calculate histogram (MACD line - signal line)
-        let mut result = Vec::new();
-        let signal_start_idx = self.signal_period - 1;
-        for i in signal_start_idx..macd_line.len() {
-            let macd = macd_line[i];
-            let signal = signal_values[i - signal_start_idx];
-            let histogram = macd - signal;
-
-            result.push(MacdResult {
-                macd,
-                signal,
-                histogram,
-            });
-        }
-
-        // Update current values
-        if let Some(last) = result.last() {
-            self.current_macd = Some(last.macd);
-            self.current_signal = Some(last.signal);
-            self.current_histogram = Some(last.histogram);
-        }
-
         Ok(result)
     }
 
@@ -279,26 +247,38 @@ mod tests {
 
         // Create price data with a clear trend
         let prices: Vec<f64> = (1..=20).map(|i| i as f64 * 2.0).collect();
-
-        // We need at least slow_period + signal_period - 1 data points
         assert!(prices.len() >= macd.slow_period + macd.signal_period - 1);
 
         let result = macd.calculate(&prices).unwrap();
 
-        // Check output length: data_len - slow_period - signal_period + 2
-        // Because: data_len - slow_period + 1 MACD points, then signal starts at signal_period
-        let expected_len = prices.len() - macd.slow_period - macd.signal_period + 2;
-        assert_eq!(result.len(), expected_len);
+        // After the rewrite, batch == streaming: one MacdResult per input
+        // bar (the first `slow_period - 1` are warmup-tainted but emitted
+        // for parity with pandas `ewm(adjust=False)`).
+        assert_eq!(result.len(), prices.len());
 
-        // Verify MACD values are all non-zero (since we have a clear trend)
-        for output in &result {
-            assert!(output.macd != 0.0);
-            assert!(output.signal != 0.0);
-            // In a consistent trend, histogram should stabilize around non-zero values
-        }
-
-        // In an uptrend with consistent price increases, MACD should be positive
+        // First emission seeds: macd == signal → histogram == 0.
+        assert!((result[0].histogram).abs() < 1e-12);
+        // In a consistent uptrend, late-bar MACD is positive.
         assert!(result.last().unwrap().macd > 0.0);
+        // Histogram identity always holds.
+        for r in &result {
+            assert!((r.histogram - (r.macd - r.signal)).abs() < 1e-12);
+        }
+    }
+
+    #[test]
+    fn test_macd_calculate_matches_streaming() {
+        let prices: Vec<f64> = (1..=40).map(|i| i as f64).collect();
+        let mut batch = Macd::new(12, 26, 9).unwrap();
+        let batch_out = batch.calculate(&prices).unwrap();
+
+        let mut stream = Macd::new(12, 26, 9).unwrap();
+        let stream_out: Vec<_> = prices
+            .iter()
+            .filter_map(|&p| stream.next(p).unwrap())
+            .collect();
+
+        assert_eq!(batch_out, stream_out);
     }
 
     #[test]
@@ -362,11 +342,10 @@ mod tests {
 
         let result = macd.calculate(&candles).unwrap();
 
-        // Check output length
-        let expected_len = candles.len() - macd.slow_period - macd.signal_period + 2;
-        assert_eq!(result.len(), expected_len);
+        // Same convention as the f64 path: one MacdResult per input candle.
+        assert_eq!(result.len(), candles.len());
 
-        // In an uptrend, MACD should be positive
+        // In an uptrend, late-bar MACD is positive.
         assert!(result.last().unwrap().macd > 0.0);
     }
 

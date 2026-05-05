@@ -162,19 +162,23 @@ mod tests {
         let mut ema = Ema::new(3).unwrap();
         let data = vec![2.0, 4.0, 6.0, 8.0, 10.0];
 
+        // Recursive EMA: same length as input, seeds with data[0],
+        // alpha = 2/(period+1) = 0.5. Matches Ema::next exactly.
         let result = ema.calculate(&data).unwrap();
-        assert_eq!(result.len(), 3);
+        assert_eq!(result.len(), data.len());
 
-        // First EMA is SMA of first 3 values
-        assert_eq!(result[0], 4.0); // (2+4+6)/3
-
-        // Rest follow EMA formula with alpha = 2/(3+1) = 0.5
         let alpha = 0.5;
-        let expected1 = 8.0 * alpha + 4.0 * (1.0 - alpha); // 6.0
-        let expected2 = 10.0 * alpha + expected1 * (1.0 - alpha); // 8.0
-
-        assert_eq!(result[1], expected1);
-        assert_eq!(result[2], expected2);
+        let mut expected = vec![data[0]];
+        for &v in &data[1..] {
+            let prev = *expected.last().unwrap();
+            expected.push((v - prev) * alpha + prev);
+        }
+        for (i, (&got, &want)) in result.iter().zip(expected.iter()).enumerate() {
+            assert!(
+                (got - want).abs() < 1e-12,
+                "row {i}: got {got}, expected {want}"
+            );
+        }
     }
 
     #[test]
@@ -258,18 +262,23 @@ mod tests {
         ];
 
         let result = ema.calculate(&candles).unwrap();
-        assert_eq!(result.len(), 3);
+        // Recursive EMA: same length as input, seeds with closes[0],
+        // alpha = 2/(period+1) = 0.5.
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        assert_eq!(result.len(), closes.len());
 
-        // First EMA is SMA of first 3 close prices
-        assert_eq!(result[0], 4.0); // (2+4+6)/3
-
-        // Rest follow EMA formula with alpha = 2/(3+1) = 0.5
         let alpha = 0.5;
-        let expected1 = 8.0 * alpha + 4.0 * (1.0 - alpha); // 6.0
-        let expected2 = 10.0 * alpha + expected1 * (1.0 - alpha); // 8.0
-
-        assert_eq!(result[1], expected1);
-        assert_eq!(result[2], expected2);
+        let mut expected = vec![closes[0]];
+        for &v in &closes[1..] {
+            let prev = *expected.last().unwrap();
+            expected.push((v - prev) * alpha + prev);
+        }
+        for (i, (&got, &want)) in result.iter().zip(expected.iter()).enumerate() {
+            assert!(
+                (got - want).abs() < 1e-12,
+                "row {i}: got {got}, expected {want}"
+            );
+        }
     }
 
     #[test]
