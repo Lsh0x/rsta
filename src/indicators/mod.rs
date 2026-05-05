@@ -91,7 +91,7 @@ pub mod volatility;
 pub mod volume;
 
 // Re-export core traits and types
-pub use self::candle::Candle;
+pub use self::candle::{heikin_ashi, Candle};
 pub use self::error::IndicatorError;
 pub use self::traits::{Indicator, PriceDataAccessor};
 
