@@ -96,7 +96,10 @@ pub use self::error::IndicatorError;
 pub use self::traits::{Indicator, PriceDataAccessor};
 
 // Re-export trend indicators
-pub use self::trend::{ExponentialMovingAverage, SimpleMovingAverage};
+pub use self::trend::{
+    ExponentialMovingAverage, MovingAverageConvergenceDivergence,
+    MovingAverageConvergenceDivergenceResult, SimpleMovingAverage,
+};
 
 // Re-export momentum indicators
 pub use self::momentum::{
@@ -131,6 +134,10 @@ pub type Cmf = ChaikinMoneyFlow;
 pub type Vroc = VolumeRateOfChange;
 /// Alias for [`AccumulationDistributionLine`].
 pub type Adl = AccumulationDistributionLine;
+/// Alias for [`MovingAverageConvergenceDivergence`].
+pub type Macd = MovingAverageConvergenceDivergence;
+/// Alias for [`MovingAverageConvergenceDivergenceResult`].
+pub type MacdResult = MovingAverageConvergenceDivergenceResult;
 
 // Re-export utility functions
 pub use self::utils::{

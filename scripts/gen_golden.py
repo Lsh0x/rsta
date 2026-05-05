@@ -50,6 +50,12 @@ def main() -> None:
     write_golden("sma_5", ta.sma(df["close"], length=5))
     write_golden("ema_5", ta.ema(df["close"], length=5))
     write_golden("rsi_14", ta.rsi(df["close"], length=14))
+
+    # MACD has three output series; persist each as its own golden CSV.
+    macd = ta.macd(df["close"], fast=12, slow=26, signal=9)
+    write_golden("macd_12_26_9_line", macd["MACD_12_26_9"])
+    write_golden("macd_12_26_9_signal", macd["MACDs_12_26_9"])
+    write_golden("macd_12_26_9_hist", macd["MACDh_12_26_9"])
     # Add additional indicators as they land in the crate.
 
 
