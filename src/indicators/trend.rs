@@ -201,6 +201,333 @@ impl ExponentialMovingAverage {
     }
 }
 
+/// Weighted Moving Average (WMA).
+///
+/// Linearly weighted: the most recent close gets weight `period`, the oldest
+/// gets weight `1`. Weights sum to `period * (period + 1) / 2`.
+///
+/// # Example
+/// ```
+/// use rsta::indicators::trend::WeightedMovingAverage;
+/// use rsta::indicators::Indicator;
+///
+/// let mut wma = WeightedMovingAverage::new(3).unwrap();
+/// // Weights are 1, 2, 3 → (1*1 + 2*2 + 3*3) / 6 = 14/6 ≈ 2.333.
+/// let out = wma.calculate(&[1.0, 2.0, 3.0]).unwrap();
+/// assert!((out[0] - (14.0 / 6.0)).abs() < 1e-12);
+/// ```
+#[derive(Debug)]
+pub struct WeightedMovingAverage {
+    period: usize,
+    buffer: VecDeque<f64>,
+}
+
+impl WeightedMovingAverage {
+    /// Create a new WMA. `period >= 1`.
+    pub fn new(period: usize) -> Result<Self, IndicatorError> {
+        validate_period(period, 1)?;
+        Ok(Self {
+            period,
+            buffer: VecDeque::with_capacity(period),
+        })
+    }
+
+    fn weighted(buffer: &VecDeque<f64>, period: usize) -> f64 {
+        let n = period as f64;
+        let denom = n * (n + 1.0) / 2.0;
+        // Most-recent value has the highest weight.
+        let mut numer = 0.0;
+        for (i, v) in buffer.iter().enumerate() {
+            numer += (i as f64 + 1.0) * v;
+        }
+        numer / denom
+    }
+
+    /// Convenience: feed candles by extracting the close price.
+    pub fn calculate_candles(&mut self, candles: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        <Self as Indicator<f64, f64>>::calculate(self, &closes)
+    }
+
+    /// Convenience: streaming update with the close price of a candle.
+    pub fn next_candle(&mut self, candle: Candle) -> Result<Option<f64>, IndicatorError> {
+        <Self as Indicator<f64, f64>>::next(self, candle.close)
+    }
+}
+
+impl Indicator<f64, f64> for WeightedMovingAverage {
+    fn calculate(&mut self, data: &[f64]) -> Result<Vec<f64>, IndicatorError> {
+        validate_data_length(data, self.period)?;
+        self.reset();
+        let mut out = Vec::with_capacity(data.len() - self.period + 1);
+        for &v in data {
+            if let Some(x) = self.next(v)? {
+                out.push(x);
+            }
+        }
+        Ok(out)
+    }
+
+    fn next(&mut self, value: f64) -> Result<Option<f64>, IndicatorError> {
+        self.buffer.push_back(value);
+        if self.buffer.len() > self.period {
+            self.buffer.pop_front();
+        }
+        if self.buffer.len() < self.period {
+            return Ok(None);
+        }
+        Ok(Some(Self::weighted(&self.buffer, self.period)))
+    }
+
+    fn reset(&mut self) {
+        self.buffer.clear();
+    }
+
+    fn name(&self) -> &'static str {
+        "WMA"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
+}
+
+/// Double Exponential Moving Average (DEMA).
+///
+/// `DEMA = 2 * EMA(price) - EMA(EMA(price))`. Reduces the lag of a plain EMA
+/// while keeping smoothing.
+#[derive(Debug)]
+pub struct DoubleExponentialMovingAverage {
+    period: usize,
+    ema1: ExponentialMovingAverage,
+    ema2: ExponentialMovingAverage,
+    seen: usize,
+}
+
+impl DoubleExponentialMovingAverage {
+    /// Create a new DEMA. `period >= 1`.
+    pub fn new(period: usize) -> Result<Self, IndicatorError> {
+        validate_period(period, 1)?;
+        Ok(Self {
+            period,
+            ema1: ExponentialMovingAverage::new(period)?,
+            ema2: ExponentialMovingAverage::new(period)?,
+            seen: 0,
+        })
+    }
+
+    /// Convenience: feed candles by extracting the close price.
+    pub fn calculate_candles(&mut self, candles: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        <Self as Indicator<f64, f64>>::calculate(self, &closes)
+    }
+
+    /// Convenience: streaming update with the close price of a candle.
+    pub fn next_candle(&mut self, candle: Candle) -> Result<Option<f64>, IndicatorError> {
+        <Self as Indicator<f64, f64>>::next(self, candle.close)
+    }
+}
+
+impl Indicator<f64, f64> for DoubleExponentialMovingAverage {
+    fn calculate(&mut self, data: &[f64]) -> Result<Vec<f64>, IndicatorError> {
+        // The classic warmup for DEMA is 2*period - 1 samples (the EMA-of-EMA
+        // needs `period` outputs from the inner EMA, which itself produces a
+        // value on every input, so 2*period - 1 inputs are enough to stabilise).
+        validate_data_length(data, 2 * self.period - 1)?;
+        self.reset();
+        let mut out = Vec::with_capacity(data.len() - 2 * (self.period - 1));
+        for &v in data {
+            if let Some(x) = self.next(v)? {
+                out.push(x);
+            }
+        }
+        Ok(out)
+    }
+
+    fn next(&mut self, value: f64) -> Result<Option<f64>, IndicatorError> {
+        self.seen += 1;
+        let e1 = self.ema1.next(value)?.unwrap();
+        let e2 = self.ema2.next(e1)?.unwrap();
+        // Hold output until the inner EMA-of-EMA has had `period` samples to
+        // stabilise; before that the chained EMA is biased toward the seed.
+        if self.seen < 2 * self.period - 1 {
+            return Ok(None);
+        }
+        Ok(Some(2.0 * e1 - e2))
+    }
+
+    fn reset(&mut self) {
+        self.ema1.reset();
+        self.ema2.reset();
+        self.seen = 0;
+    }
+
+    fn name(&self) -> &'static str {
+        "DEMA"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
+}
+
+/// Triple Exponential Moving Average (TEMA).
+///
+/// `TEMA = 3 * EMA1 - 3 * EMA2 + EMA3` where each EMA chains the previous
+/// one's output. Even less lag than DEMA at the cost of more warmup.
+#[derive(Debug)]
+pub struct TripleExponentialMovingAverage {
+    period: usize,
+    ema1: ExponentialMovingAverage,
+    ema2: ExponentialMovingAverage,
+    ema3: ExponentialMovingAverage,
+    seen: usize,
+}
+
+impl TripleExponentialMovingAverage {
+    /// Create a new TEMA. `period >= 1`.
+    pub fn new(period: usize) -> Result<Self, IndicatorError> {
+        validate_period(period, 1)?;
+        Ok(Self {
+            period,
+            ema1: ExponentialMovingAverage::new(period)?,
+            ema2: ExponentialMovingAverage::new(period)?,
+            ema3: ExponentialMovingAverage::new(period)?,
+            seen: 0,
+        })
+    }
+
+    /// Convenience: feed candles by extracting the close price.
+    pub fn calculate_candles(&mut self, candles: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        <Self as Indicator<f64, f64>>::calculate(self, &closes)
+    }
+
+    /// Convenience: streaming update with the close price of a candle.
+    pub fn next_candle(&mut self, candle: Candle) -> Result<Option<f64>, IndicatorError> {
+        <Self as Indicator<f64, f64>>::next(self, candle.close)
+    }
+}
+
+impl Indicator<f64, f64> for TripleExponentialMovingAverage {
+    fn calculate(&mut self, data: &[f64]) -> Result<Vec<f64>, IndicatorError> {
+        validate_data_length(data, 3 * self.period - 2)?;
+        self.reset();
+        let mut out = Vec::with_capacity(data.len() - 3 * (self.period - 1));
+        for &v in data {
+            if let Some(x) = self.next(v)? {
+                out.push(x);
+            }
+        }
+        Ok(out)
+    }
+
+    fn next(&mut self, value: f64) -> Result<Option<f64>, IndicatorError> {
+        self.seen += 1;
+        let e1 = self.ema1.next(value)?.unwrap();
+        let e2 = self.ema2.next(e1)?.unwrap();
+        let e3 = self.ema3.next(e2)?.unwrap();
+        if self.seen < 3 * self.period - 2 {
+            return Ok(None);
+        }
+        Ok(Some(3.0 * e1 - 3.0 * e2 + e3))
+    }
+
+    fn reset(&mut self) {
+        self.ema1.reset();
+        self.ema2.reset();
+        self.ema3.reset();
+        self.seen = 0;
+    }
+
+    fn name(&self) -> &'static str {
+        "TEMA"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
+}
+
+/// Hull Moving Average (HMA).
+///
+/// `HMA = WMA(2 * WMA(price, period/2) - WMA(price, period), sqrt(period))`.
+/// Designed by Alan Hull to be both smooth and reactive.
+#[derive(Debug)]
+pub struct HullMovingAverage {
+    period: usize,
+    half: WeightedMovingAverage,
+    full: WeightedMovingAverage,
+    smooth: WeightedMovingAverage,
+}
+
+impl HullMovingAverage {
+    /// Create a new HMA. `period >= 2` (we need a non-zero `period / 2`).
+    pub fn new(period: usize) -> Result<Self, IndicatorError> {
+        validate_period(period, 2)?;
+        let half_p = period / 2;
+        let smooth_p = (period as f64).sqrt().round() as usize;
+        Ok(Self {
+            period,
+            half: WeightedMovingAverage::new(half_p)?,
+            full: WeightedMovingAverage::new(period)?,
+            smooth: WeightedMovingAverage::new(smooth_p.max(1))?,
+        })
+    }
+
+    /// Convenience: feed candles by extracting the close price.
+    pub fn calculate_candles(&mut self, candles: &[Candle]) -> Result<Vec<f64>, IndicatorError> {
+        let closes: Vec<f64> = candles.iter().map(|c| c.close).collect();
+        <Self as Indicator<f64, f64>>::calculate(self, &closes)
+    }
+
+    /// Convenience: streaming update with the close price of a candle.
+    pub fn next_candle(&mut self, candle: Candle) -> Result<Option<f64>, IndicatorError> {
+        <Self as Indicator<f64, f64>>::next(self, candle.close)
+    }
+}
+
+impl Indicator<f64, f64> for HullMovingAverage {
+    fn calculate(&mut self, data: &[f64]) -> Result<Vec<f64>, IndicatorError> {
+        // Worst-case warmup: full WMA(period) + smooth WMA(sqrt(period)) - 1.
+        let smooth_p = (self.period as f64).sqrt().round() as usize;
+        let needed = self.period + smooth_p.max(1) - 1;
+        validate_data_length(data, needed)?;
+        self.reset();
+        let mut out = Vec::with_capacity(data.len().saturating_sub(needed - 1));
+        for &v in data {
+            if let Some(x) = self.next(v)? {
+                out.push(x);
+            }
+        }
+        Ok(out)
+    }
+
+    fn next(&mut self, value: f64) -> Result<Option<f64>, IndicatorError> {
+        let h = self.half.next(value)?;
+        let f = self.full.next(value)?;
+        let raw = match (h, f) {
+            (Some(h), Some(f)) => 2.0 * h - f,
+            _ => return Ok(None),
+        };
+        self.smooth.next(raw)
+    }
+
+    fn reset(&mut self) {
+        self.half.reset();
+        self.full.reset();
+        self.smooth.reset();
+    }
+
+    fn name(&self) -> &'static str {
+        "HMA"
+    }
+
+    fn period(&self) -> Option<usize> {
+        Some(self.period)
+    }
+}
+
 /// MACD (Moving Average Convergence/Divergence) result.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MovingAverageConvergenceDivergenceResult {
@@ -783,6 +1110,57 @@ mod tests {
         for v in &out {
             assert!((v.histogram - (v.macd - v.signal)).abs() < 1e-12);
         }
+    }
+
+    #[test]
+    fn test_wma_basic_weighting() {
+        // Weights are 1, 2, 3 → (1*1 + 2*2 + 3*3) / 6 = 14/6.
+        let mut wma = WeightedMovingAverage::new(3).unwrap();
+        let out = wma.calculate(&[1.0, 2.0, 3.0]).unwrap();
+        assert!((out[0] - (14.0 / 6.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_wma_calculate_matches_streaming() {
+        let prices: Vec<f64> = (1..=20).map(|i| i as f64).collect();
+        let mut batch = WeightedMovingAverage::new(5).unwrap();
+        let batch_out = batch.calculate(&prices).unwrap();
+        let mut stream = WeightedMovingAverage::new(5).unwrap();
+        let stream_out: Vec<_> = prices
+            .iter()
+            .filter_map(|&p| stream.next(p).unwrap())
+            .collect();
+        assert_eq!(batch_out, stream_out);
+    }
+
+    #[test]
+    fn test_dema_construction_and_warmup() {
+        let mut dema = DoubleExponentialMovingAverage::new(5).unwrap();
+        // First 2*period - 2 = 8 inputs produce nothing.
+        for v in 1..=8 {
+            assert!(dema.next(v as f64).unwrap().is_none(), "premature {v}");
+        }
+        let first = dema.next(9.0).unwrap();
+        assert!(first.is_some());
+    }
+
+    #[test]
+    fn test_tema_warmup() {
+        let mut tema = TripleExponentialMovingAverage::new(3).unwrap();
+        // 3*period - 2 = 7 → first emission at the 7th input.
+        for v in 1..=6 {
+            assert!(tema.next(v as f64).unwrap().is_none());
+        }
+        assert!(tema.next(7.0).unwrap().is_some());
+    }
+
+    #[test]
+    fn test_hma_emits_and_validates_period() {
+        assert!(HullMovingAverage::new(1).is_err());
+        let mut hma = HullMovingAverage::new(9).unwrap();
+        let prices: Vec<f64> = (1..=30).map(|i| i as f64).collect();
+        let out = hma.calculate(&prices).unwrap();
+        assert!(!out.is_empty());
     }
 
     fn make_candles(count: usize, trend: f64) -> Vec<Candle> {

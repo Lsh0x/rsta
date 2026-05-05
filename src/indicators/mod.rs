@@ -97,9 +97,10 @@ pub use self::traits::{Indicator, PriceDataAccessor};
 
 // Re-export trend indicators
 pub use self::trend::{
-    AverageDirectionalIndex, AverageDirectionalIndexResult, ExponentialMovingAverage,
-    MovingAverageConvergenceDivergence, MovingAverageConvergenceDivergenceResult,
-    SimpleMovingAverage,
+    AverageDirectionalIndex, AverageDirectionalIndexResult, DoubleExponentialMovingAverage,
+    ExponentialMovingAverage, HullMovingAverage, MovingAverageConvergenceDivergence,
+    MovingAverageConvergenceDivergenceResult, SimpleMovingAverage, TripleExponentialMovingAverage,
+    WeightedMovingAverage,
 };
 
 // Re-export momentum indicators
@@ -152,6 +153,14 @@ pub type Mfi = MoneyFlowIndex;
 pub type Donchian = DonchianChannels;
 /// Alias for [`VolumeWeightedAveragePrice`].
 pub type Vwap = VolumeWeightedAveragePrice;
+/// Alias for [`WeightedMovingAverage`].
+pub type Wma = WeightedMovingAverage;
+/// Alias for [`DoubleExponentialMovingAverage`].
+pub type Dema = DoubleExponentialMovingAverage;
+/// Alias for [`TripleExponentialMovingAverage`].
+pub type Tema = TripleExponentialMovingAverage;
+/// Alias for [`HullMovingAverage`].
+pub type Hma = HullMovingAverage;
 
 // Re-export utility functions
 pub use self::utils::{
