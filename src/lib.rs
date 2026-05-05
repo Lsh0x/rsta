@@ -39,6 +39,9 @@ pub mod indicators;
 /// Trading signals layer built on top of indicator outputs.
 pub mod signals;
 
+/// Candlestick and chart pattern recognition.
+pub mod patterns;
+
 /// Single-asset backtesting engine.
 pub mod backtest;
 
