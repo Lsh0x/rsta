@@ -66,7 +66,16 @@ pub fn calculate_sma(data: &[f64], period: usize) -> Result<Vec<f64>, IndicatorE
     Ok(result)
 }
 
-/// Calculate Exponential Moving Average (EMA)
+/// Recursive Exponential Moving Average — `adjust=False` semantics.
+///
+/// Seeds with `data[0]` and iterates `EMA[t] = α * x[t] + (1 - α) * EMA[t-1]`
+/// with `α = 2 / (period + 1)`. The output has the same length as the input
+/// (one EMA per bar, starting from the first).
+///
+/// This matches `Ema::next`'s convention exactly, as well as pandas'
+/// `ewm(span=period, adjust=False).mean()`, TradingView, and `ta-rs`.
+/// `validate_data_length(data, period)` is still enforced so callers get a
+/// clear error for trivially short inputs.
 ///
 /// # Arguments
 /// * `data` - Data values
@@ -78,22 +87,14 @@ pub fn calculate_ema(data: &[f64], period: usize) -> Result<Vec<f64>, IndicatorE
     validate_period(period, 1)?;
     validate_data_length(data, period)?;
 
-    let n = data.len();
-    let mut result = Vec::with_capacity(n - period + 1);
-
-    // Calculate first EMA as SMA
-    let first_sma = data.iter().take(period).sum::<f64>() / period as f64;
-    result.push(first_sma);
-
-    // EMA multiplier
     let multiplier = 2.0 / (period as f64 + 1.0);
-
-    // Calculate the rest using the EMA formula
-    for &value in data.iter().take(n).skip(period) {
-        let ema = (value - result.last().unwrap()) * multiplier + result.last().unwrap();
-        result.push(ema);
+    let mut result = Vec::with_capacity(data.len());
+    let mut current = data[0];
+    result.push(current);
+    for &value in &data[1..] {
+        current = (value - current) * multiplier + current;
+        result.push(current);
     }
-
     Ok(result)
 }
 
@@ -209,17 +210,16 @@ mod tests {
     fn test_calculate_ema() {
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
 
-        // EMA with period 3
+        // Recursive EMA with period 3 (alpha = 0.5).
         let ema_result = calculate_ema(&data, 3).unwrap();
-        assert_eq!(ema_result.len(), 8);
-
-        // First value should be SMA
-        assert_eq!(ema_result[0], 2.0);
-
-        // Manual calculation of second value
-        // multiplier = 2 / (3 + 1) = 0.5
-        // EMA = (4 - 2) * 0.5 + 2 = 3.0
-        assert_eq!(ema_result[1], 3.0);
+        // Same length as input (one EMA per bar, starting from the first).
+        assert_eq!(ema_result.len(), data.len());
+        // First value is the seed (= data[0]).
+        assert_eq!(ema_result[0], 1.0);
+        // EMA[1] = (data[1] - EMA[0]) * 0.5 + EMA[0] = (2 - 1) * 0.5 + 1 = 1.5
+        assert_eq!(ema_result[1], 1.5);
+        // EMA[2] = (3 - 1.5) * 0.5 + 1.5 = 2.25
+        assert_eq!(ema_result[2], 2.25);
 
         // Error case - period too large
         let result = calculate_ema(&data, 11);
