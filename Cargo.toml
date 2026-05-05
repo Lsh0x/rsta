@@ -7,8 +7,17 @@ description = "Rust Statistical Technical Analysis (RSTA) - A library for financ
 license = "GPL-3.0"
 
 
+[features]
+default = []
+csv = ["dep:csv", "dep:serde", "dep:chrono"]
+
 [dependencies]
 ndarray = "0.15"
 thiserror = "1.0"
 num-traits = "0.2"
 statrs = "0.16"
+
+# Optional dependencies (enabled by feature flags)
+csv = { version = "1.3", optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+chrono = { version = "0.4", default-features = false, features = ["std"], optional = true }

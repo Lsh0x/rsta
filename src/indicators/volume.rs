@@ -1772,7 +1772,7 @@ mod tests {
         let mut vroc = VolumeRateOfChange::new(2).unwrap();
 
         // Create test candles
-        let candles = vec![
+        let candles = [
             Candle {
                 timestamp: 1,
                 open: 10.0,
@@ -2216,7 +2216,7 @@ mod tests {
         let mut cmf = ChaikinMoneyFlow::new(3).unwrap();
 
         // Create test candles
-        let candles = vec![
+        let candles = [
             Candle {
                 timestamp: 1,
                 open: 10.0,

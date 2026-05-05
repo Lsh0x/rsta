@@ -111,10 +111,26 @@ pub use self::volatility::{
 
 // Re-export volume indicators
 pub use self::volume::{
-    AccumulationDistributionLine,
-    OnBalanceVolume,
-    VolumeRateOfChange, // ChaikinMoneyFlow is not public in volume.rs
+    AccumulationDistributionLine, ChaikinMoneyFlow, OnBalanceVolume, VolumeRateOfChange,
 };
+
+// Short-name aliases for ergonomic use (matching common TA terminology).
+/// Alias for [`SimpleMovingAverage`].
+pub type Sma = SimpleMovingAverage;
+/// Alias for [`ExponentialMovingAverage`].
+pub type Ema = ExponentialMovingAverage;
+/// Alias for [`RelativeStrengthIndex`].
+pub type Rsi = RelativeStrengthIndex;
+/// Alias for [`AverageTrueRange`].
+pub type Atr = AverageTrueRange;
+/// Alias for [`OnBalanceVolume`].
+pub type Obv = OnBalanceVolume;
+/// Alias for [`ChaikinMoneyFlow`].
+pub type Cmf = ChaikinMoneyFlow;
+/// Alias for [`VolumeRateOfChange`].
+pub type Vroc = VolumeRateOfChange;
+/// Alias for [`AccumulationDistributionLine`].
+pub type Adl = AccumulationDistributionLine;
 
 // Re-export utility functions
 pub use self::utils::{

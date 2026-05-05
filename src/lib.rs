@@ -33,6 +33,10 @@
 /// Re-exports all indicator modules
 pub mod indicators;
 
+/// CSV import/export utilities (gated behind the `csv` feature).
+#[cfg(feature = "csv")]
+pub mod csv;
+
 // Re-export key types for convenience
 pub use indicators::Candle;
 pub use indicators::Indicator;

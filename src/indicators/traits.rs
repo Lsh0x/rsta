@@ -165,18 +165,22 @@ pub trait PriceDataAccessor<T> {
 }
 
 /// Default implementation for f64 price data
+///
+/// When the underlying data is a single price, all OHLC accessors return that
+/// price uniformly so generic indicators behave identically whether they are
+/// fed `f64` or `Candle` data. Volume defaults to `0.0`.
 impl PriceDataAccessor<f64> for f64 {
     fn get_close(&self, data: &f64) -> f64 {
         *data
     }
-    fn get_high(&self, _: &f64) -> f64 {
-        *self
+    fn get_high(&self, data: &f64) -> f64 {
+        *data
     }
-    fn get_low(&self, _: &f64) -> f64 {
-        *self
+    fn get_low(&self, data: &f64) -> f64 {
+        *data
     }
-    fn get_open(&self, _: &f64) -> f64 {
-        *self
+    fn get_open(&self, data: &f64) -> f64 {
+        *data
     }
     fn get_volume(&self, _: &f64) -> f64 {
         0.0
