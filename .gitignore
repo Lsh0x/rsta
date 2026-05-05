@@ -1,1 +1,5 @@
 /target
+
+# Local PR tooling artifacts
+/pr_extractor.sh
+/pr_info/

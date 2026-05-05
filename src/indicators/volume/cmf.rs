@@ -470,7 +470,7 @@ mod tests {
         let mut cmf = Cmf::new(3).unwrap();
 
         // Create test candles
-        let candles = vec![
+        let candles = [
             Candle {
                 timestamp: 1,
                 open: 10.0,
